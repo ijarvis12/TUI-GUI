@@ -101,6 +101,7 @@ class WindowManager(App):
             width: 100%;
             height: 95%;
             border: white round;
+            overflow-y: scroll;
         }
     """
 
