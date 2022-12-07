@@ -5,12 +5,12 @@ from time import sleep
 from io import TextIOBase
 
 from textual.app import App, ComposeResult
-from textual.containers import Container, Content
-from textual.widgets import Label
+from textual.containers import Container
+from textual.widgets import Label, Input
 from textual import events
 
 
-class Text_Field(Content):
+class Text_Field(Input):
 
     text = ""
     cmd = ""
