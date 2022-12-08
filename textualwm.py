@@ -5,25 +5,20 @@ from time import sleep
 from io import TextIOBase
 
 from textual.app import App, ComposeResult
-from textual.containers import Container
-from textual.widgets import Label, Input
-from textual.widget import Widget
+from textual.containers import Container, Content
+from textual.geometry import Region
+from textual.widgets import Label
 from textual import events
 
+class Text_Field(Content):
 
-class Text_Field(Input):
+    valid_chars = printable.split()[0] + ' '
 
     def __init__(self):
         super().__init__()
         self.text = ""
         self.cmd = ""
         self.writer = TextIOBase()
-        self.valid_chars = printable.split()[0] + ' '
-        super().is_scrollable = True
-        super().show_vertical_scrollbar = True
-
-    def allow_vertical_scroll(self):
-        return True
 
     def write(self, text=""):
         self.text += text
@@ -102,6 +97,7 @@ class WindowManager(App):
             width: 100%;
         }
         Text_Field {
+            content-align: left top;
             width: 100%;
             height: 95%;
             scrollbar-gutter: stable;
