@@ -6,7 +6,6 @@ from io import TextIOBase
 
 from textual.app import App, ComposeResult
 from textual.containers import Container, Content
-from textual.geometry import Region
 from textual.widgets import Label
 from textual import events
 
@@ -19,6 +18,7 @@ class Text_Field(Content):
         self.text = ""
         self.cmd = ""
         self.writer = TextIOBase()
+        self.h = 10
 
     def write(self, text=""):
         self.text += text
@@ -46,6 +46,8 @@ class Text_Field(Content):
         elif event_char in self.valid_chars:
             self.writer.write(event_char)
         elif event_char == '\r':
+            self.h += 1
+            self.styles.height = self.h
             self.writer.write('\n')
             try:
                 self.writer.write(str(eval(self.cmd)))
@@ -96,12 +98,13 @@ class WindowManager(App):
             content-align: center top;
             width: 100%;
         }
+        Vertical {
+            overflow-y: scroll;
+        }
         Text_Field {
             content-align: left top;
             width: 100%;
-            height: 95%;
-            scrollbar-gutter: stable;
-            overflow-y: scroll;
+            height: 10;
         }
     """
 
