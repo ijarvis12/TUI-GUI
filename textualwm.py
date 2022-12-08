@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 from string import printable
-from time import sleep
 from io import TextIOBase
 
 from textual.app import App, ComposeResult
@@ -34,9 +33,6 @@ class Text_Field(Content):
         self.writer.write('> ')
         self.cmd = ""
 
-    def on_click(self, event: events.Click):
-        self.focus()
-
     def on_key(self, event: events.Key):
         event_char = event.char
         if event.key == 'home':
@@ -62,19 +58,20 @@ class Text_Field(Content):
 
 class Window(Container):
 
-    def compose(self) -> ComposeResult:
-        yield Label("Terminal")
-        yield Text_Field()
+    def __init__(self):
+        super().__init__()
+        self.text_field = Text_Field()
+        self.label = Label("Terminal")
 
-    def on_focus(self):
-        self.focus(False)
+    def compose(self) -> ComposeResult:
+        yield self.label
+        yield self.text_field
 
     def on_mouse_down(self, event: events.MouseDown):
         for window in app.windows:
             window.styles.layer = 'below'
         self.styles.layer = 'above'
-        while sleep(0.1):
-            self.styles.offset = (event.screen_x, event.screen_y)
+        self.styles.offset = (event.screen_x-event.x,event.screen_y-event.y)
 
 
 class WindowManager(App):
@@ -94,9 +91,6 @@ class WindowManager(App):
         }
         Label {
             content-align: center top;
-        }
-        Vertical {
-            overflow-y: scroll;
         }
         Text_Field {
             content-align: left top;
