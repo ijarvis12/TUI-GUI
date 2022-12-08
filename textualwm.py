@@ -80,8 +80,6 @@ class Window(Container):
 class WindowManager(App):
     CSS = """
         Screen {
-            layout: grid;
-            grid-size: 1280 720;
             align: left top;
             max-height: 100%;
             max-width: 100%;
@@ -89,14 +87,13 @@ class WindowManager(App):
             layers: below above;
         }
         Window {
-            column-span: 500;
-            row-span: 300;
+            height: 25;
+            width: 82;
             border: white round;
             content-align: center middle;
         }
         Label {
             content-align: center top;
-            width: 100%;
         }
         Vertical {
             overflow-y: scroll;
