@@ -61,6 +61,8 @@ class Window(Container):
         super().__init__()
         self.text_field = Text_Field()
         self.label = Label("Terminal")
+        self.x = int(str(self.styles.offset[0]))
+        self.y = int(str(self.styles.offset[1]))
 
     def compose(self) -> ComposeResult:
         yield self.label
@@ -70,7 +72,9 @@ class Window(Container):
         for window in app.windows:
             window.styles.layer = 'below'
         self.styles.layer = 'above'
-        self.styles.offset = (event.screen_x-event.x,event.screen_y-event.y)
+        self.styles.offset = (event.screen_x-self.x,event.screen_y-self.y)
+        self.x = int(str(self.styles.offset[0]))
+        self.y = int(str(self.styles.offset[1]))
         self.text_field.focus()
 
 
