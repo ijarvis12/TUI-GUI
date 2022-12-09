@@ -18,7 +18,7 @@ class Text_Field(Content):
         super().__init__()
         self.text = ""
         self.cmd = ""
-        self.cursor_idx = 0
+        self.cursor_idx = 1
         self.writer = TextIOBase()
 
     def write(self, text=""):
@@ -49,7 +49,11 @@ class Text_Field(Content):
             self.cursor_idx -= 1
             self.refresh()
         elif event_key == 'left':
-            self.cursor_idx -= 1
+            if self.cursor_idx != 0:
+                self.cursor_idx -= 1
+        elif event_key == 'right':
+            if self.cursor_idx != len(self.text):
+                self.cursor_idx += 1
         elif event_char in self.valid_chars:
             self.writer.write(event_char)
         elif event_char == '\r':
@@ -64,7 +68,7 @@ class Text_Field(Content):
                 self.writer.write('\n')
             self.writer.write('[white]> ')
             self.cmd = ""
-            self.cursor_idx = 0
+            self.cursor_idx = 1
 
 
 class Window(Container):
