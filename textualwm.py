@@ -17,7 +17,6 @@ class Text_Field(Content):
         self.text = ""
         self.cmd = ""
         self.writer = TextIOBase()
-        self.h = 10
 
     def write(self, text=""):
         self.text += text
@@ -31,18 +30,23 @@ class Text_Field(Content):
         self.writer.write = self.write
         self.writer.write('> ')
         self.cmd = ""
+        self.focus()
 
     def on_key(self, event: events.Key):
         event_char = event.char
-        if event.key == 'home':
+        event_key = event.key
+        if event_key == 'home':
             app.add_window()
-        elif event.key == 'end':
+        elif event_key == 'end':
             app.remove_window()
+        elif event_key == 'backspace' or event_key == 'delete':
+            self.text = self.text[:-1]
+            self.cmd = self.cmd[:-1]
+            self.refresh()
         elif event_char in self.valid_chars:
             self.writer.write(event_char)
         elif event_char == '\r':
-            self.h += 1
-            self.styles.height = self.h
+            self.styles.height = self.styles.height[0] + 1
             self.writer.write('\n')
             try:
                 self.writer.write(str(eval(self.cmd)))
