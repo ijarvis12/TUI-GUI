@@ -72,10 +72,13 @@ class Window(Container):
         for window in app.windows:
             window.styles.layer = 'below'
         self.styles.layer = 'above'
-        self.styles.offset = (event.screen_x-self.x,event.screen_y-self.y)
         self.x = int(str(self.styles.offset[0]))
         self.y = int(str(self.styles.offset[1]))
         self.text_field.focus()
+
+    def on_mouse_up(self, event: events.MouseUp):
+        self.styles.offset = (event.screen_x-self.x,event.screen_y-self.y)
+
 
 
 class WindowManager(App):
