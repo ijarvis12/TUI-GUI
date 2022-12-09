@@ -3,6 +3,8 @@
 from string import printable
 from io import TextIOBase
 
+from rich import print
+
 from textual.app import App, ComposeResult
 from textual.containers import Container, Content
 from textual.widgets import Label
