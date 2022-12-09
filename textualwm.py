@@ -27,6 +27,12 @@ class Text_Field(Content):
         self.cursor_idx += 1
         self.refresh()
 
+    def back(self):
+        self.cursor_idx -= 1
+        self.text = self.text[:self.cursor_idx] + self.text[self.cursor_idx:]
+        self.cmd = self.cmd[:self.cursor_idx] + self.cmd[self.cursor_idx:]
+        self.refresh()
+
     def render(self):
         return self.text
 
@@ -44,17 +50,18 @@ class Text_Field(Content):
         elif event_key == 'end':
             app.remove_window()
         elif event_key == 'backspace' or event_key == 'delete':
-            self.text = self.text[:-1]
-            self.cmd = self.cmd[:-1]
-            self.cursor_idx -= 1
-            self.refresh()
+            self.back()
         elif event_key == 'left':
-            if self.cursor_idx != 0:
+            if self.cursor_idx != 2:
                 self.cursor_idx -= 1
         elif event_key == 'right':
             if self.cursor_idx != len(self.text):
                 self.cursor_idx += 1
-        elif event_char in self.valid_chars:
+        elif event_key == 'up':
+            self.cursor_idx = 2
+        elif event_key == 'down':
+            self.cursor_idx = len(self.text)
+        elif event_char in self.valid_chars and event_char != '|':
             self.writer.write(event_char)
         elif event_char == '\r':
             self.styles.height = self.styles.height[0] + 1
