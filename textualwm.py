@@ -57,7 +57,7 @@ class Text_Field(Content):
                 newline = False
             if newline:
                 self.writer.write('\n')
-            self.writer.write('> ')
+            self.writer.write('[white]> ')
             self.cmd = ""
 
 
