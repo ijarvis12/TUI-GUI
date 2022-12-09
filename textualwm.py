@@ -28,7 +28,6 @@ class Text_Field(Content):
         return self.text
 
     def on_mount(self):
-        self.focus()
         self.writer.write = self.write
         self.writer.write('> ')
         self.cmd = ""
@@ -72,6 +71,7 @@ class Window(Container):
             window.styles.layer = 'below'
         self.styles.layer = 'above'
         self.styles.offset = (event.screen_x-event.x,event.screen_y-event.y)
+        self.text_field.focus()
 
 
 class WindowManager(App):
