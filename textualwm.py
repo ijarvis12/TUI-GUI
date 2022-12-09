@@ -18,11 +18,13 @@ class Text_Field(Content):
         super().__init__()
         self.text = ""
         self.cmd = ""
+        self.cursor_idx = 0
         self.writer = TextIOBase()
 
     def write(self, text=""):
-        self.text += text
-        self.cmd += text
+        self.text = self.text[:self.cursor_idx] + text + self.text[self.cursor_idx:]
+        self.cmd += self.cmd[:self.cursor_idx] + text + self.cmd[self.cursor_idx:]
+        self.cursor_idx += 1
         self.refresh()
 
     def render(self):
@@ -44,7 +46,10 @@ class Text_Field(Content):
         elif event_key == 'backspace' or event_key == 'delete':
             self.text = self.text[:-1]
             self.cmd = self.cmd[:-1]
+            self.cursor_idx -= 1
             self.refresh()
+        elif event_key == 'left':
+            self.cursor_idx -= 1
         elif event_char in self.valid_chars:
             self.writer.write(event_char)
         elif event_char == '\r':
@@ -59,6 +64,7 @@ class Text_Field(Content):
                 self.writer.write('\n')
             self.writer.write('[white]> ')
             self.cmd = ""
+            self.cursor_idx = 0
 
 
 class Window(Container):
