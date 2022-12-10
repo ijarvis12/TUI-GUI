@@ -20,38 +20,18 @@ class Text_Field(Content):
         self.cmd = ""
         self.cursor_idx = 0
         self.writer = TextIOBase()
-
+  
     def write(self, text=""):
         if self.text != '\n':
             self.cursor_idx += 1
-            self.text = self.text.strip('|')
+            self.text = self.text.replace('|','')
             self.text = self.text[:self.cursor_idx] + text + '|' + self.text[self.cursor_idx:]
             self.cmd = self.cmd[:self.cursor_idx] + text + self.cmd[self.cursor_idx:]
             self.refresh()
         else:
+            self.text = self.text.replace('|','')
             self.text += '\n'
             self.cursor_idx = len(self.text)
-            self.refresh()
-
-    def back(self):
-        self.cursor_idx -= 1
-        self.text = self.text.strip('|')
-        self.text = self.text[:self.cursor_idx+1] + '|' + self.text[self.cursor_idx+2:]
-        self.cmd = self.cmd[:self.cursor_idx+1] + self.cmd[self.cursor_idx+2:]
-        self.refresh()
-
-    def left(self):
-        if self.cursor_idx > 1:
-            self.text = self.text.strip('|')
-            self.text = self.text[:self.cursor_idx] + '|' + self.text[self.cursor_idx:]
-            self.cursor_idx -= 1
-            self.refresh()
-
-    def right(self):
-        if self.cursor_idx < len(self.text)+1:
-            self.text = self.text.strip('|')
-            self.text = self.text[:self.cursor_idx+2] + '|' + self.text[self.cursor_idx+2:]
-            self.cursor_idx += 1
             self.refresh()
 
     def render(self):
@@ -59,9 +39,32 @@ class Text_Field(Content):
 
     def on_mount(self):
         self.writer.write = self.write
-        self.writer.write('> ')
+        self.writer.write('[white]> ')
         self.cmd = ""
+        self.cursor_idx = len(self.text)
         self.focus()
+
+    def back(self):
+        if self.text[self.cursor_idx-3:self.cursor_idx+1] != ']> ':
+            self.cursor_idx -= 1
+            self.text = self.text.replace('|','')
+            self.text = self.text[:self.cursor_idx+1] + '|' + self.text[self.cursor_idx+2:]
+            self.cmd = self.cmd[:self.cursor_idx+1] + self.cmd[self.cursor_idx+2:]
+            self.refresh()
+
+    def left(self):
+        if self.cursor_idx > 1:
+            self.text = self.text.replace('|','')
+            self.text = self.text[:self.cursor_idx-1] + '|' + self.text[self.cursor_idx-1:]
+            self.cursor_idx -= 1
+            self.refresh()
+
+    def right(self):
+        if self.cursor_idx < len(self.text)+1:
+            self.text = self.text.replace('|','')
+            self.text = self.text[:self.cursor_idx+2] + '|' + self.text[self.cursor_idx+2:]
+            self.cursor_idx += 1
+            self.refresh()
 
     def on_key(self, event: events.Key):
         event_char = event.char
@@ -80,7 +83,6 @@ class Text_Field(Content):
             self.writer.write(event_char)
         elif event_char == '\r':
             self.styles.height = self.styles.height[0] + 1
-            self.text = self.text.strip('|')
             self.writer.write('\n')
             self.refresh()
             try:
@@ -90,7 +92,6 @@ class Text_Field(Content):
                 newline = False
             if newline:
                 self.writer.write('\n')
-            self.text = self.text.strip('|')
             self.writer.write('[white]> ')
             self.cmd = ""
             self.cursor_idx = len(self.text)
