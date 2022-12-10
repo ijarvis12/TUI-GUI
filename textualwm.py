@@ -45,7 +45,7 @@ class Text_Field(Content):
         self.focus()
 
     def back(self):
-        if self.text[self.cursor_idx-3:self.cursor_idx+1] != ']> ':
+        if self.cursor_idx > 8:
             self.cursor_idx -= 1
             self.text = self.text.replace('|','')
             self.text = self.text[:self.cursor_idx+1] + '|' + self.text[self.cursor_idx+2:]
@@ -53,14 +53,14 @@ class Text_Field(Content):
             self.refresh()
 
     def left(self):
-        if self.cursor_idx > 1:
+        if self.cursor_idx > 8:
             self.text = self.text.replace('|','')
             self.text = self.text[:self.cursor_idx-1] + '|' + self.text[self.cursor_idx-1:]
             self.cursor_idx -= 1
             self.refresh()
 
     def right(self):
-        if self.cursor_idx < len(self.text)+1:
+        if self.cursor_idx < len(self.text):
             self.text = self.text.replace('|','')
             self.text = self.text[:self.cursor_idx+2] + '|' + self.text[self.cursor_idx+2:]
             self.cursor_idx += 1
