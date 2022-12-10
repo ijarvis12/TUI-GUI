@@ -22,16 +22,37 @@ class Text_Field(Content):
         self.writer = TextIOBase()
 
     def write(self, text=""):
-        self.cursor_idx += 1
-        self.text = self.text[:self.cursor_idx] + text + self.text[self.cursor_idx:]
-        self.cmd = self.cmd[:self.cursor_idx] + text + self.cmd[self.cursor_idx:]
-        self.refresh()
+        if self.text != '\n':
+            self.cursor_idx += 1
+            self.text = self.text.strip('|')
+            self.text = self.text[:self.cursor_idx] + text + '|' + self.text[self.cursor_idx:]
+            self.cmd = self.cmd[:self.cursor_idx] + text + self.cmd[self.cursor_idx:]
+            self.refresh()
+        else:
+            self.text += '\n'
+            self.cursor_idx = len(self.text)
+            self.refresh()
 
     def back(self):
         self.cursor_idx -= 1
-        self.text = self.text[:self.cursor_idx] + self.text[self.cursor_idx:]
-        self.cmd = self.cmd[:self.cursor_idx] + self.cmd[self.cursor_idx:]
+        self.text = self.text.strip('|')
+        self.text = self.text[:self.cursor_idx+1] + '|' + self.text[self.cursor_idx+2:]
+        self.cmd = self.cmd[:self.cursor_idx+1] + self.cmd[self.cursor_idx+2:]
         self.refresh()
+
+    def left(self):
+        if self.cursor_idx > 1:
+            self.text = self.text.strip('|')
+            self.text = self.text[:self.cursor_idx] + '|' + self.text[self.cursor_idx:]
+            self.cursor_idx -= 1
+            self.refresh()
+
+    def right(self):
+        if self.cursor_idx < len(self.text)+1:
+            self.text = self.text.strip('|')
+            self.text = self.text[:self.cursor_idx+2] + '|' + self.text[self.cursor_idx+2:]
+            self.cursor_idx += 1
+            self.refresh()
 
     def render(self):
         return self.text
@@ -52,20 +73,16 @@ class Text_Field(Content):
         elif event_key == 'backspace' or event_key == 'delete':
             self.back()
         elif event_key == 'left':
-            if self.cursor_idx > 1:
-                self.cursor_idx -= 1
+            self.left()
         elif event_key == 'right':
-            if self.cursor_idx < len(self.text) - 1:
-                self.cursor_idx += 1
-        elif event_key == 'up':
-            self.cursor_idx = 1
-        elif event_key == 'down':
-            self.cursor_idx = len(self.text) - 1
+            self.right()
         elif event_char in self.valid_chars and event_char != '|':
             self.writer.write(event_char)
         elif event_char == '\r':
             self.styles.height = self.styles.height[0] + 1
+            self.text = self.text.strip('|')
             self.writer.write('\n')
+            self.refresh()
             try:
                 self.writer.write(str(eval(self.cmd)))
                 newline = True
@@ -73,9 +90,10 @@ class Text_Field(Content):
                 newline = False
             if newline:
                 self.writer.write('\n')
+            self.text = self.text.strip('|')
             self.writer.write('[white]> ')
             self.cmd = ""
-            self.cursor_idx = 1
+            self.cursor_idx = len(self.text)
 
 
 class Window(Container):
