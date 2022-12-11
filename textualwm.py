@@ -6,20 +6,38 @@ from io import TextIOBase
 from rich import print
 
 from textual.app import App, ComposeResult
-from textual.containers import Container, Content
+from textual.containers import Content
 from textual.widgets import Label
 from textual import events
 
-class Text_Field(Content):
 
+class Window(Content):
+
+    allow_vertical_scroll = True
     valid_chars = printable.split()[0] + ' '
 
     def __init__(self):
         super().__init__()
+        self.x = int(str(self.styles.offset[0]))
+        self.y = int(str(self.styles.offset[1]))
         self.text = ""
         self.cmd = ""
         self.cursor_idx = 0
         self.writer = TextIOBase()
+
+    def compose(self) -> ComposeResult:
+        yield Label("Terminal")
+
+    def on_mouse_down(self, event: events.MouseDown):
+        for window in app.windows:
+            window.styles.layer = 'below'
+        self.styles.layer = 'above'
+        self.x = int(str(self.styles.offset[0]))
+        self.y = int(str(self.styles.offset[1]))
+        self.focus()
+
+    def on_mouse_up(self, event: events.MouseUp):
+        self.styles.offset = (event.screen_x-self.x,event.screen_y-self.y)
   
     def write(self, text=""):
         if self.text != '\n':
@@ -39,7 +57,7 @@ class Text_Field(Content):
 
     def on_mount(self):
         self.writer.write = self.write
-        self.writer.write('[white]> ')
+        self.writer.write('\n[white]> ')
         self.cmd = ""
         self.cursor_idx = len(self.text)
         self.focus()
@@ -79,10 +97,12 @@ class Text_Field(Content):
             self.left()
         elif event_key == 'right':
             self.right()
+        elif event_char is None:
+            pass
         elif event_char in self.valid_chars and event_char != '|':
             self.writer.write(event_char)
         elif event_char == '\r':
-            self.styles.height = self.styles.height[0] + 1
+            #self.styles.height = self.styles.height[0] + 1
             self.writer.write('\n')
             self.refresh()
             try:
@@ -95,31 +115,6 @@ class Text_Field(Content):
             self.writer.write('[white]> ')
             self.cmd = ""
             self.cursor_idx = len(self.text)
-
-
-class Window(Container):
-
-    def __init__(self):
-        super().__init__()
-        self.text_field = Text_Field()
-        self.label = Label("Terminal")
-        self.x = int(str(self.styles.offset[0]))
-        self.y = int(str(self.styles.offset[1]))
-
-    def compose(self) -> ComposeResult:
-        yield self.label
-        yield self.text_field
-
-    def on_mouse_down(self, event: events.MouseDown):
-        for window in app.windows:
-            window.styles.layer = 'below'
-        self.styles.layer = 'above'
-        self.x = int(str(self.styles.offset[0]))
-        self.y = int(str(self.styles.offset[1]))
-        self.text_field.focus()
-
-    def on_mouse_up(self, event: events.MouseUp):
-        self.styles.offset = (event.screen_x-self.x,event.screen_y-self.y)
 
 
 
@@ -136,15 +131,12 @@ class WindowManager(App):
             height: 25;
             width: 82;
             border: white round;
-            content-align: center middle;
+            content-align: left top;
+            scrollbar-gutter: stable;
+            scrollbar-size-vertical: 1;
         }
         Label {
             content-align: center top;
-        }
-        Text_Field {
-            content-align: left top;
-            width: 100%;
-            height: 10;
         }
     """
 
