@@ -5,12 +5,16 @@ int main(){
         CDKSCREEN *cdkscreen = initCDKScreen(screen);
         raw();
         echo();
-        CDKSWINDOW *swindow = newCDKSwindow(cdkscreen,CENTER,CENTER,50,100,"Hello, World",1000,true,true);
+        int startx = 1;
+        int starty = 1;
+        CDKSWINDOW *swindow = newCDKSwindow(cdkscreen,startx,starty,25,50,"Hello, World",1000,true,true);
         drawCDKSwindow(swindow,true);
+        move(startx+=2,starty++);
         refreshCDKScreen(cdkscreen);
         char command[256] = {};
         do {
                 strcpy(command,"");
+                move(startx++,starty);
                 getstr(command);
                 addCDKSwindow(swindow,command,BOTTOM);
                 refreshCDKScreen(cdkscreen);
