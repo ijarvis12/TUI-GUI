@@ -12,7 +12,7 @@ int main(){
         int startcol = 1;
 
         //make swindow and display
-        CDKSWINDOW *swindow = newCDKSwindow(cdkscreen,startrow,startcol,25,50,"Hello, World",1000,true,true);
+        CDKSWINDOW *swindow = newCDKSwindow(cdkscreen,startrow,startcol,25,50,"Terminal",1000,true,true);
         drawCDKSwindow(swindow,true);
 
         //move cursor inside swindow
