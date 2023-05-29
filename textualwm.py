@@ -22,7 +22,7 @@ class Window(Content):
         self.y = int(str(self.styles.offset[1]))
         self.text = ""
         self.cmd = ""
-        self.cursor_idx = 0
+        self.cursor_idx = 9
         self.writer = TextIOBase()
 
     def compose(self) -> ComposeResult:
@@ -49,7 +49,7 @@ class Window(Content):
         else:
             self.text = self.text.replace('|','')
             self.text += '\n'
-            self.cursor_idx = len(self.text)
+            self.cursor_idx = 9
             self.refresh()
 
     def render(self):
@@ -59,11 +59,11 @@ class Window(Content):
         self.writer.write = self.write
         self.writer.write('\n[white]> ')
         self.cmd = ""
-        self.cursor_idx = len(self.text)
+        self.cursor_idx = 9
         self.focus()
 
     def back(self):
-        if self.cursor_idx > 8:
+        if self.cursor_idx > 9:
             self.cursor_idx -= 1
             self.text = self.text.replace('|','')
             self.text = self.text[:self.cursor_idx+1] + '|' + self.text[self.cursor_idx+2:]
@@ -71,7 +71,7 @@ class Window(Content):
             self.refresh()
 
     def left(self):
-        if self.cursor_idx > 8:
+        if self.cursor_idx > 9:
             self.text = self.text.replace('|','')
             self.text = self.text[:self.cursor_idx-1] + '|' + self.text[self.cursor_idx-1:]
             self.cursor_idx -= 1
@@ -114,7 +114,7 @@ class Window(Content):
                 self.writer.write('\n')
             self.writer.write('[white]> ')
             self.cmd = ""
-            self.cursor_idx = len(self.text)
+            self.cursor_idx = 9
 
 
 
