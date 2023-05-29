@@ -26,7 +26,7 @@ class Window(TextLog):
         self.styles.offset = (event.screen_x-self.x, event.screen_y-self.y)
 
     def on_mount(self):
-        self.write('\n> ')
+        self.write('> ')
         self.cmd = ""
         self.focus()
 
