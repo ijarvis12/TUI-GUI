@@ -4,7 +4,6 @@ from textual.app import App, ComposeResult
 from textual.widgets import TextLog
 from textual import events
 
-
 class Window(TextLog):
 
     def __init__(self):
@@ -12,7 +11,7 @@ class Window(TextLog):
         self.border_title = "Terminal"
         self.x = int(str(self.styles.offset[0]))
         self.y = int(str(self.styles.offset[1]))
-        self.cmd = ""
+        self.border_subtitle = self.cmd = ""
 
     def on_mouse_down(self, event: events.MouseDown):
         for window in app.windows:
@@ -26,8 +25,8 @@ class Window(TextLog):
         self.styles.offset = (event.screen_x-self.x, event.screen_y-self.y)
 
     def on_mount(self):
-        self.write('> ')
         self.cmd = ""
+        self.border_subtitle = '> '
         self.focus()
 
     def on_key(self, event: events.Key):
@@ -39,12 +38,17 @@ class Window(TextLog):
             app.remove_window()
         elif event_char is None:
             pass
-        elif event_char == '\r':
-            self.write(str(eval(self.cmd)))
-            self.write('> ')
+        elif event_key == 'backspace' or event_key == 'delete':
+            if len(self.cmd) > 0:
+                self.border_subtitle = self.border_subtitle[:-1]
+                self.cmd = self.cmd[:-1]
+        elif event_char == '\r' and self.cmd != "":
+            output = eval(self.cmd)
+            self.write(output)
             self.cmd = ""
+            self.border_subtitle = '> '
         else:
-            self.write(event_char)
+            self.border_subtitle += event_char
             self.cmd += event_char
 
 
