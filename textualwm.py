@@ -12,7 +12,7 @@ class Window(TextLog):
     PS1 = _pwd.getpwuid(os.geteuid())[0] + '@' + socket.gethostname() + ' >>> '
 
     def __init__(self):
-        super().__init__()
+        super().__init__(markup=True)
         self.border_title = "Terminal"
         self.x = int(str(self.styles.offset[0]))
         self.y = int(str(self.styles.offset[1]))
