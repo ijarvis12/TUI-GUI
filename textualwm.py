@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
-from textual.app import App, ComposeResult
+from textual.app import App
 from textual.widgets import TextLog
 from textual import events
+
+import os
 
 class Window(TextLog):
 
@@ -42,9 +44,13 @@ class Window(TextLog):
             if len(self.cmd) > 0:
                 self.border_subtitle = self.border_subtitle[:-1]
                 self.cmd = self.cmd[:-1]
-        elif event_char == '\r' and self.cmd != "":
-            output = eval(self.cmd)
-            self.write(output)
+        elif event_char == '\r':
+            self.write(self.cmd)
+            try:
+                output = eval(self.cmd)
+                self.write(output)
+            except:
+                pass
             self.cmd = ""
             self.border_subtitle = '> '
         else:
@@ -63,8 +69,8 @@ class WindowManager(App):
             layers: below above;
         }
         Window {
-            height: 25;
-            width: 82;
+            height: 20;
+            width: 40;
             border: white round;
             content-align: left top;
             scrollbar-gutter: stable;
@@ -95,5 +101,8 @@ class WindowManager(App):
 
 
 if __name__ == "__main__":
+    cd = os.chdir
+    ls = os.listdir
+    pwd = os.getcwd
     app = WindowManager()
     app.run()
