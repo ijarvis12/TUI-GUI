@@ -1,4 +1,5 @@
-#include <cdk/cdk.h>
+#include <cdk.h>
+#include <string.h>
 
 int main(){
         //initialize
@@ -11,12 +12,12 @@ int main(){
         int startrow = 1;
         int startcol = 1;
 
-        //make swindow and display
-        CDKSWINDOW *swindow = newCDKSwindow(cdkscreen,startrow,startcol,25,50,"Terminal",1000,true,true);
-        drawCDKSwindow(swindow,true);
+        //make swindow and display it
+        CDKSWINDOW *swindow = newCDKSwindow(cdkscreen, startrow, startcol, 25, 50, "== Terminal ==", 1000, true, true);
+        drawCDKSwindow(swindow, true);
 
-        //move cursor inside swindow
-        move(startrow,startcol++);
+        //move cursor to swindow
+        move(startrow+=26, ++startcol);
 
         //refresh screen
         refreshCDKScreen(cdkscreen);
@@ -24,21 +25,26 @@ int main(){
         //command var
         char command[256] = {};
 
+        //program end command (ESC)
+        char end_cmd[5] = "exit";
+
+        //error string
+        char err[256] = "err: ";
+
         //loop for command exec
-        do {
-                //clear command var
-                strcpy(command,"");
-                //move cursor down
-                move(startrow+=2,startcol);
-                //get command
-                getstr(command);
-                addCDKSwindow(swindow,command,BOTTOM);
-                refreshCDKScreen(cdkscreen);
+        while(!getstr(command) && strcmp(command, end_cmd)) {
                 //exec command
-                execCDKSwindow(swindow,command,BOTTOM);
+                if (execCDKSwindow(swindow, command, BOTTOM)) {
+                        addCDKSwindow(swindow, strcat(err, command), BOTTOM);
+                        strcpy(err, "err: ");
+                }
+                //move cursor back to cmdline
+                move(startrow, startcol);
+                //refresh screen
                 refreshCDKScreen(cdkscreen);
+                //clear command var
+                strcpy(command, "");
         }
-        while(strcmp(command, "^C") != 0);
 
         //end program
         destroyCDKSwindow(swindow);
