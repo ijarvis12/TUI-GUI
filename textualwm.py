@@ -4,6 +4,8 @@ from textual.app import App, ComposeResult
 from textual.widgets import TextLog
 from textual import events
 
+from rich.markup import MarkupError
+
 import os, socket
 import pwd as _pwd
 
@@ -54,32 +56,41 @@ class Window(TextLog):
         self.cursor_idx = len(self.PS1)
         self.focus()
 
+    def update_subtitle(self, back: bool = False, add_char: bool = False, event_char: str = ""):
+        subtitle = self.border_subtitle
+        subtitle = subtitle.replace('[/blink]', '')
+        subtitle = subtitle.replace('[blink]', '')
+        if add_char:
+            self.border_subtitle = subtitle[:self.cursor_idx-1] + '[blink]' + event_char + '[/blink]' + subtitle[self.cursor_idx-1:]
+        else:
+            try:
+                self.border_subtitle = subtitle[:self.cursor_idx-1] + '[blink]' + subtitle[self.cursor_idx-1] + '[/blink]' + subtitle[self.cursor_idx+back*1:]
+            except MarkupError:
+                subtitle = self.border_subtitle
+                subtitle = subtitle.replace('[/blink]', '')
+                subtitle = subtitle.replace('[blink]', '')
+                subtitle = subtitle.strip(']')
+                subtitle = subtitle.strip('abcdefghijklmnopqrstuvwxyz')
+                subtitle = subtitle[:-2]
+                self.border_subtitle = subtitle[:self.cursor_idx-1] + '[blink]' + subtitle[self.cursor_idx-1] + '[/blink]' + subtitle[self.cursor_idx+back*1:]
+
+
     def on_key(self, event: events.Key):
         event_char = event.character
         event_key = event.key
         if event_key == 'backspace' or event_key == 'delete':
             if self.cursor_idx > len(self.PS1):
-                subtitle = self.border_subtitle
-                subtitle = subtitle.replace('[/blink]', '')
-                subtitle = subtitle.replace('[blink]', '')
                 self.cursor_idx -= 1
-                self.border_subtitle = subtitle[:self.cursor_idx-1] + '[blink]' + subtitle[self.cursor_idx-1] + '[/blink]' + subtitle[self.cursor_idx+1:]
+                self.update_subtitle(back=True)
                 self.cmd = self.cmd[:self.cursor_idx-len(self.PS1)] + self.cmd[self.cursor_idx-len(self.PS1)+1:]
-                self.write(self.cmd)
         elif event_key == 'left':
             if self.cursor_idx > len(self.PS1) + 1:
                 self.cursor_idx -= 1
-                subtitle = self.border_subtitle
-                subtitle = subtitle.replace('[/blink]', '')
-                subtitle = subtitle.replace('[blink]', '')
-                self.border_subtitle = subtitle[:self.cursor_idx-1] + '[blink]' + subtitle[self.cursor_idx-1] + '[/blink]' + subtitle[self.cursor_idx:]
+                self.update_subtitle()
         elif event_key == 'right':
             if self.cursor_idx < len(self.PS1) + len(self.cmd):
                 self.cursor_idx += 1
-                subtitle = self.border_subtitle
-                subtitle = subtitle.replace('[/blink]', '')
-                subtitle = subtitle.replace('[blink]', '')
-                self.border_subtitle = subtitle[:self.cursor_idx-1] + '[blink]' + subtitle[self.cursor_idx-1] + '[/blink]' + subtitle[self.cursor_idx:]
+                self.update_subtitle()
         elif event_key == 'ctrl+d':
             app.remove_window()
         elif event_key == 'ctrl+l':
@@ -100,11 +111,8 @@ class Window(TextLog):
         elif event.is_printable == False:
             pass
         else:
-            subtitle = self.border_subtitle
-            subtitle = subtitle.replace('[/blink]', '')
-            subtitle = subtitle.replace('[blink]', '')
             self.cursor_idx += 1
-            self.border_subtitle = subtitle[:self.cursor_idx-1] + '[blink]' + event_char + '[/blink]' + subtitle[self.cursor_idx-1:]
+            self.update_subtitle(add_char=True, event_char=event_char)
             self.cmd = self.cmd[:self.cursor_idx-len(self.PS1)-1] + event_char + self.cmd[self.cursor_idx-len(self.PS1)-1:]
 
 
