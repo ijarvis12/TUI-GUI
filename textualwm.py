@@ -9,7 +9,7 @@ import pwd as _pwd
 
 class Window(TextLog):
 
-    PS1 = _pwd.getpwuid(os.geteuid())[0] + '@' + socket.gethostname() + ' >>> '
+    PS1 = '[blue]' + _pwd.getpwuid(os.geteuid())[0] + '@' + socket.gethostname() + '[/blue][white] >>>[/white] '
 
     def __init__(self):
         super().__init__(markup=True)
@@ -17,6 +17,7 @@ class Window(TextLog):
         self.x = int(str(self.styles.offset[0]))
         self.y = int(str(self.styles.offset[1]))
         self.border_subtitle = self.cmd = ""
+        self.cursor_idx = len(self.PS1)
 
     def on_mouse_down(self, event: events.MouseDown):
         if self != app.windows['above']:
@@ -50,23 +51,42 @@ class Window(TextLog):
     def on_mount(self):
         self.cmd = ""
         self.border_subtitle = self.PS1
+        self.cursor_idx = len(self.PS1)
         self.focus()
 
     def on_key(self, event: events.Key):
         event_char = event.character
         event_key = event.key
-        if event_char is None:
-            pass
-        elif event_key == 'backspace' or event_key == 'delete':
-            if len(self.cmd) > 0:
-                self.border_subtitle = self.border_subtitle[:-1]
-                self.cmd = self.cmd[:-1]
+        if event_key == 'backspace' or event_key == 'delete':
+            if self.cursor_idx > len(self.PS1):
+                subtitle = self.border_subtitle
+                subtitle = subtitle.replace('[/blink]', '')
+                subtitle = subtitle.replace('[blink]', '')
+                self.cursor_idx -= 1
+                self.border_subtitle = subtitle[:self.cursor_idx-1] + '[blink]' + subtitle[self.cursor_idx-1] + '[/blink]' + subtitle[self.cursor_idx+1:]
+                self.cmd = self.cmd[:self.cursor_idx-len(self.PS1)] + self.cmd[self.cursor_idx-len(self.PS1)+1:]
+                self.write(self.cmd)
+        elif event_key == 'left':
+            if self.cursor_idx > len(self.PS1) + 1:
+                self.cursor_idx -= 1
+                subtitle = self.border_subtitle
+                subtitle = subtitle.replace('[/blink]', '')
+                subtitle = subtitle.replace('[blink]', '')
+                self.border_subtitle = subtitle[:self.cursor_idx-1] + '[blink]' + subtitle[self.cursor_idx-1] + '[/blink]' + subtitle[self.cursor_idx:]
+        elif event_key == 'right':
+            if self.cursor_idx < len(self.PS1) + len(self.cmd):
+                self.cursor_idx += 1
+                subtitle = self.border_subtitle
+                subtitle = subtitle.replace('[/blink]', '')
+                subtitle = subtitle.replace('[blink]', '')
+                self.border_subtitle = subtitle[:self.cursor_idx-1] + '[blink]' + subtitle[self.cursor_idx-1] + '[/blink]' + subtitle[self.cursor_idx:]
         elif event_key == 'ctrl+d':
             app.remove_window()
         elif event_key == 'ctrl+l':
             self.clear()
             self.cmd = ""
             self.border_subtitle = self.PS1
+            self.cursor_idx = len(self.PS1)
         elif event_char == '\r':
             self.write(self.cmd)
             try:
@@ -76,9 +96,16 @@ class Window(TextLog):
                 pass
             self.cmd = ""
             self.border_subtitle = self.PS1
+            self.cursor_idx = len(self.PS1)
+        elif event.is_printable == False:
+            pass
         else:
-            self.border_subtitle += event_char
-            self.cmd += event_char
+            subtitle = self.border_subtitle
+            subtitle = subtitle.replace('[/blink]', '')
+            subtitle = subtitle.replace('[blink]', '')
+            self.cursor_idx += 1
+            self.border_subtitle = subtitle[:self.cursor_idx-1] + '[blink]' + event_char + '[/blink]' + subtitle[self.cursor_idx-1:]
+            self.cmd = self.cmd[:self.cursor_idx-len(self.PS1)-1] + event_char + self.cmd[self.cursor_idx-len(self.PS1)-1:]
 
 
 
