@@ -18,7 +18,7 @@ def main(stdscr):
         pane = new_panel(win)
 
         box = Textbox(win)
-        box.edit()
+        box.edit() # Ctrl-G to save and exit
 
         return
 
