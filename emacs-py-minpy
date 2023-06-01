@@ -1,25 +1,26 @@
 #!/usr/bin/env python3
 
 import curses
-from curses import wrapper
-from curses.textpad import Textbox, rectangle
+from curses import wrapper, window
+from curses.textpad import Textbox
 from curses.panel import *
 
 def main(stdscr):
         stdscr.clear()
-        begin_x = 20; begin_y = 7
-        height = 25; width = 80
-        win = curses.newwin(height, width, begin_y, begin_x)
+        screen = curses.initscr()
+#        curses.echo()
         stdscr.refresh()
 
-        rectangle(stdscr, begin_y-1, begin_x-1, begin_y+height, begin_x+width)
-        stdscr.refresh()
+        win0 = screen.subwin(0,0)
+        pane0 = new_panel(win0)
+        win0.idcok(True)
+        win0.idlok(True)
+        win0.scrollok(True)
 
-        pane = new_panel(win)
-
-        box = Textbox(win)
+        box = Textbox(win0)
         box.edit() # Ctrl-G to save and exit
 
+        curses.endwin()
         return
 
 
