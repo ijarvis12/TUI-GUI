@@ -99,12 +99,11 @@ class Window(TextLog):
             self.border_subtitle = self.PS1
             self.cursor_idx = len(self.PS1)
         elif event_char == '\r':
-            self.write(self.cmd)
             try:
                 output = eval(self.cmd)
                 self.write(output)
             except:
-                pass
+                self.write(self.cmd)
             self.cmd = ""
             self.border_subtitle = self.PS1
             self.cursor_idx = len(self.PS1)
