@@ -5,20 +5,69 @@ from curses import wrapper, window
 from curses.textpad import Textbox
 from curses.panel import *
 
+def create_win(screen, windows):
+        if len(windows) > 0:
+                y, x = windows[0].getmaxyx()
+                new_y = y//2
+                for idx,w in enumerate(windows):
+                       w.resize(new_y, x)
+                       if idx != 0:
+                               w.mvwin(w.getyx()[0]-new_y//2, 0)
+                win = screen.subwin(new_y-1, x, y-new_y, 0)
+        else:
+                win = screen.subwin(0, 0)
+        win.idcok(True)
+        win.idlok(True)
+        win.scrollok(True)
+        windows.append(win)
+        return Textbox(win)
+
+
 def main(stdscr):
         stdscr.clear()
-        screen = curses.initscr()
-#        curses.echo()
+        screen0 = curses.initscr()
+        panel0 = new_panel(screen0)
         stdscr.refresh()
 
-        win0 = screen.subwin(0,0)
-        pane0 = new_panel(win0)
-        win0.idcok(True)
-        win0.idlok(True)
-        win0.scrollok(True)
+        windows = []
+        text_boxes = []
 
-        box = Textbox(win0)
-        box.edit() # Ctrl-G to save and exit
+        text_boxes.append(create_win(screen0, windows))
+
+        win_num = 0
+        curr_win = windows[win_num]
+        text_boxes[0].edit() # Ctrl-G to exit to cmdline
+
+        s = chr(curr_win.getch())
+        while s != '':
+                if s == 'n':
+                        text_boxes.append(create_win(screen0, windows))
+                        win_num = len(windows) - 1
+                        text_boxes[win_num].edit()
+                elif s == 'r':
+                        if win_num > 0:
+                                del windows[win_num]
+                                del text_boxes[win_num]
+                                for w in windows:
+                                        y, x = w.getyx()
+                                        maxy,maxx = w.getmaxyx()
+                                        newy = (maxy-y)*2
+                                        newx = (maxx-x)*2
+                                        newypos = y*2
+                                        newxpos = x*2
+                                        w.move(newypos, newxpos)
+                                        w.resize(newy, newx)
+                                        screen0.refresh()
+                                win_num -= 1
+                                curr_win = windows[win_num]
+                                text_boxes[win_num].edit()
+                elif s == 'w':
+                        if win_num < len(windows) - 1:
+                                win_num += 1
+                        else:
+                                win_num = 0
+                        text_boxes[win_num].edit()
+                s = chr(curr_win.getch())
 
         curses.endwin()
         return
