@@ -2,7 +2,7 @@
 
 import curses
 from curses import wrapper, window
-from curses.textpad import Textbox, rectangle
+from curses.textpad import Textbox
 from curses.panel import *
 
 def split_win(screen_num, screens, windows):
@@ -13,17 +13,17 @@ def split_win(screen_num, screens, windows):
         for idx,w in enumerate(windows[screen_num]):
                w.resize(new_y_len, maxx0)
                if idx > 0:
-                       w.mvwin(w.getparyx()[0]-int(new_y_len*len(windows[screen_num])/(len(windows[screen_num])+1)), 0)
+                       w.mvwin(int(w.getparyx()[0]-new_y_len*len(windows[screen_num])/(len(windows[screen_num])+1)), 0)
                y, x = w.getparyx()
-               rectangle(screens[screen_num], y, x, y+w.getmaxyx()[0]-1, x+w.getmaxyx()[1]-1)
+               w.border()
                w.refresh()
-               if idx == len(windows[screen_num])-1:
-                       win = screens[screen_num].subwin(new_y_len, maxx0, new_y_len+y, 0)
-                       rectangle(screens[screen_num], win.getparyx()[0], win.getparyx()[1], win.getparyx()[0]+win.getmaxyx()[0]-1, win.getparyx()[1]+win.getmaxyx()[1]-1)
+        win = screens[screen_num].subwin(new_y_len, maxx0, y+new_y_len, 0)
+        win.border()
         win.idcok(True)
         win.idlok(True)
         win.scrollok(True)
         windows[screen_num].append(win)
+        screens[screen_num].refresh()
         return Textbox(win)
 
 def create_screen(screen_num, screens, panels, cmdlines, cmds, windows):
@@ -43,7 +43,7 @@ def create_screen(screen_num, screens, panels, cmdlines, cmds, windows):
 
         # setup window
         win = screens[screen_num].subwin(maxy-2, maxx, 0, 0)
-        rectangle(screens[screen_num], 0, 0, maxy-3, maxx-2)
+        win.border()
         win.idcok(True)
         win.idlok(True)
         win.scrollok(True)
@@ -80,8 +80,10 @@ def remove_win(screen_num, screens, windows):
                         w.mvwin(newypos, 0)
                 w.resize(new_maxy, maxx)
                 y, x = w.getparyx()
-                rectangle(screens[screen_num], y, x, y+maxy-1, x+maxx-1)
+                w.border()
                 w.refresh()
+        screens[screen_num].refresh()
+        return
 
 def main(stdscr):
         # screen setup
