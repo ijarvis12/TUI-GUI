@@ -2,7 +2,7 @@
 
 import curses
 from curses import wrapper, window
-from curses.textpad import Textbox
+from curses.textpad import Textbox, rectangle
 from curses.panel import *
 
 def create_win(screen, windows):
@@ -14,10 +14,15 @@ def create_win(screen, windows):
                        w.resize(new_y_len, x)
                        if idx > 0:
                                w.mvwin(w.getyx()[0]-new_y_len//2, 0)
+                       rectangle(w, 0, 0, new_y_len-2, x-2)
+                       w.refresh()
                 win = screen.subwin(new_y_len-1, x, windows[-1].getmaxyx()[0]+1, 0)
+                rectangle(win, 0, 0, new_y_len-2, x-2)
+                screen.refresh()
         else:
                 maxy, maxx = screen.getmaxyx()
                 win = screen.subwin(maxy-1, maxx, 0 , 0)
+                rectangle(win, 0, 0, win.getmaxyx()[0]-2, win.getmaxyx()[1]-2)
         win.idcok(True)
         win.idlok(True)
         win.scrollok(True)
@@ -28,48 +33,58 @@ def remove_win(windows, win_num):
         prev_len_win = len(windows)
         del windows[-1]
         len_win = len(windows)
-        for w in windows:
+        for idx,w in enumerate(windows):
                 y, x = w.getyx()
                 maxy,maxx = w.getmaxyx()
                 newy_max = int((maxy-y)*(prev_len_win/len_win))
-                newypos = int(y*(prev_len_win/len_win))
-                w.mvwin(newypos, 0)
+                if idx > 0:
+                        newypos = int(y*(prev_len_win/len_win))
+                        w.mvwin(newypos, 0)
                 w.resize(newy_max, maxx)
+                rectangle(w, 0, 0, newy_max-2, maxx-2)
                 w.refresh()
+        screen.refresh()
 
 def main(stdscr):
+        # screen setup
         stdscr.clear()
         screen0 = curses.initscr()
         panel0 = new_panel(screen0)
         stdscr.refresh()
 
+        # list of windows on screen and their text boxes
         windows = []
         text_boxes = []
 
+        # setup of cmdline
         maxy, maxx = screen0.getmaxyx()
         cmdline = screen0.subwin(1, maxx, maxy-1, 0)
         cmdline.idcok(True)
         cmd = Textbox(cmdline)
         cmd.stripspaces = True
 
+        # initial text box
         text_boxes.append(create_win(screen0, windows))
-
         win_num = 0
-        text_boxes[0].edit() # Ctrl-G to exit to text_box
+        text_boxes[0].edit() # Ctrl-G to exit the text_box
 
+        # run the program
         cmd.edit()
         c = cmd.gather()
         while c != '':
+                # new window
                 if c == 'n ':
                         text_boxes.append(create_win(screen0, windows))
                         win_num = len(windows) - 1
                         text_boxes[win_num].edit()
+                # remove window
                 elif c == 'r ':
                         if len(windows) > 1:
                                 remove_win(windows, win_num)
                                 del text_boxes[-1]
                                 win_num = len(windows) - 1
                                 text_boxes[win_num].edit()
+                # next window
                 elif c == 'w ':
                         if win_num < len(windows) - 1:
                                 win_num += 1
