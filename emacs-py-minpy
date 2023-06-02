@@ -67,7 +67,7 @@ def remove_screen(screen_num, screens, panels, cmdlines, cmds, windows, text_box
 
 
 def remove_win(screen_num, screens, windows):
-        screen[screen_num].clear()
+        screens[screen_num].clear()
         prev_len_win = len(windows[screen_num])
         del windows[screen_num][-1]
         len_win = len(windows[screen_num])
@@ -80,7 +80,7 @@ def remove_win(screen_num, screens, windows):
                         w.mvwin(newypos, 0)
                 w.resize(new_maxy, maxx)
                 y, x = w.getparyx()
-                rectangle(screen, y, x, y+maxy-1, x+maxx-1)
+                rectangle(screens[screen_num], y, x, y+maxy-1, x+maxx-1)
                 w.refresh()
 
 def main(stdscr):
@@ -120,12 +120,12 @@ def main(stdscr):
                         if len(screens) > 1:
                                 screen_num = remove_screen(screen_num, screens, panels, cmdlines, cmds, windows, text_boxes)
                                 win_num = 0
-                                text_boxes[screen_num][win_num].edit()
+                        text_boxes[screen_num][win_num].edit()
                 elif c == 'rw ':
                         if len(windows[screen_num]) > 1:
                                 remove_win(screen_num, screens, windows)
                                 win_num = 0
-                                text_boxes[screen_num].edit()
+                        text_boxes[screen_num][win_num].edit()
                 # next screen
                 elif c == 's ':
                         if screen_num < len(screens) - 1:
