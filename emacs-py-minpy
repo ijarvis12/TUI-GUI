@@ -6,24 +6,28 @@ from curses.textpad import Textbox
 from curses.panel import *
 
 def split_win(screen_num, screens, windows):
+        # clear screen of hlines
         screens[screen_num].clear()
+        # window to create
         win = None
+        # usefull properties
         maxy0, maxx0 = windows[screen_num][0].getmaxyx()
         new_y_len = int(maxy0*len(windows[screen_num])/(len(windows[screen_num])+1))
+        # loop through windows, resize, move, add hline
         for idx,w in enumerate(windows[screen_num]):
                w.resize(new_y_len, maxx0)
                if idx > 0:
-                       w.mvwin(int(w.getparyx()[0]-new_y_len*len(windows[screen_num])/(len(windows[screen_num])+1)), 0)
-               y, x = w.getparyx()
-               w.border()
+                       w.mvwin(new_y_len*idx, 0)
+               screens[screen_num].hline(new_y_len*(idx+1), 0, '#', maxx0)
                w.refresh()
-        win = screens[screen_num].subwin(new_y_len, maxx0, y+new_y_len, 0)
-        win.border()
+        # create new window
+        win = screens[screen_num].subwin(new_y_len, maxx0, len(windows[screen_num])*new_y_len+1, 0)
         win.idcok(True)
         win.idlok(True)
         win.scrollok(True)
         windows[screen_num].append(win)
         screens[screen_num].refresh()
+        # return textbox for editing
         return Textbox(win)
 
 def create_screen(screen_num, screens, panels, cmdlines, cmds, windows):
@@ -43,46 +47,60 @@ def create_screen(screen_num, screens, panels, cmdlines, cmds, windows):
 
         # setup window
         win = screens[screen_num].subwin(maxy-2, maxx, 0, 0)
-        win.border()
         win.idcok(True)
         win.idlok(True)
         win.scrollok(True)
-        windows[screen_num] = [win]
+        if screen_num in windows:
+                windows[screen_num].append(win)
+        else:
+                windows[screen_num] = [win]
 
         # return text box for text_boxes, and immediate editing
         return Textbox(win)
 
 def remove_screen(screen_num, screens, panels, cmdlines, cmds, windows, text_boxes):
+        # remove screen and associated objects
         del text_boxes[screen_num]
         del windows[screen_num]
         del cmds[screen_num]
         del cmdlines[screen_num]
         del panels[screen_num]
         del screens[screen_num]
+        # get new screen number
         screen_num = len(screens)-1
+        # put screen on top
         panels[screen_num].top()
         update_panels()
         curses.doupdate()
+        # return screen number
         return screen_num
 
 
 def remove_win(screen_num, screens, windows):
+        # clear screen of hlines
         screens[screen_num].clear()
+        # get number of windows
         prev_len_win = len(windows[screen_num])
+        # remove last window
         del windows[screen_num][-1]
+        # get updated number of windows
         len_win = len(windows[screen_num])
+        # get usefull properties
+        maxy0, maxx0 = windows[screen_num][0].getmaxyx()
+        new_y_len = int(maxy0*(prev_len_win/len_win))
+        # loop through windows, moving, resizing, adding hlines
         for idx,w in enumerate(windows[screen_num]):
                 y, x = w.getparyx()
-                maxy,maxx = w.getmaxyx()
-                new_maxy = int((maxy-y)*(prev_len_win/len_win))
                 if idx > 0:
                         newypos = int(y*(prev_len_win/len_win))
                         w.mvwin(newypos, 0)
-                w.resize(new_maxy, maxx)
+                w.resize(new_y_len, maxx0)
                 y, x = w.getparyx()
-                w.border()
+                screens[screen_num].hline(y+new_y_len, 0, '#', maxx0)
                 w.refresh()
+        # update screen
         screens[screen_num].refresh()
+        # return nothing
         return
 
 def main(stdscr):
@@ -114,9 +132,10 @@ def main(stdscr):
                         win_num = 0
                         text_boxes[screen_num][win_num].edit()
                 elif c == 'nw ':
+                        win_num = len(windows[screen_num])
                         text_boxes[screen_num].append(split_win(screen_num, screens, windows))
-                        win_num += 1
                         text_boxes[screen_num][win_num].edit()
+                        #split_win(screen_num, screens, windows)
                 # remove screen
                 elif c == 'r ':
                         if len(screens) > 1:
