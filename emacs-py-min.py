@@ -80,10 +80,10 @@ def vsplit_win(screen_num, screens, win_num, windows):
                 if idx < len_win_rows - 1:
                         screen.hline(y_len*(idx+1)+idx, 0, '#', s_maxx)
                 # redraw vlines
-                maxx = wins[0].getmaxyx()[1]
+                maxy, maxx = wins[0].getmaxyx()
                 for jdx, w in enumerate(wins):
                         if jdx < len(wins) - 1:
-                                screen.vline(y_len*idx+idx, (jdx+1)*maxx+jdx, '#', y_len)
+                                screen.vline(y_len*idx+idx, (jdx+1)*maxx+jdx, '#', maxy)
         # redraw bottom hline
         if len_win_rows < 3:
                 screen.hline(screen.getmaxyx()[0]-2, 0 , '#', screen.getmaxyx()[1])
@@ -136,14 +136,20 @@ def remove_screen(screen_num, screens, panels, cmdlines, cmds, windows, text_box
         screen = screens[screen_num]
         screen.clear()
         screen.refresh()
-        # redraw hlines
+        # redraw hlines, vlines
         len_win = len(windows[screen_num])
+        s_maxy, s_maxx = screen.getmaxyx()
+        y_len = round((s_maxy-2)/len_win)
         for idx, wins in windows[screen_num].items():
                 maxy, maxx = wins[0].getmaxyx()
                 if idx < len_win - 1:
-                        screen.hline(maxy*(idx+1)+idx, 0, '#', maxx)
+                        screen.hline(y_len*(idx+1)+idx, 0, '#', s_maxx)
+                for jdx, w in enumerate(wins):
+                        if jdx < len(wins) - 1:
+                                screen.vline(y_len*idx+idx, maxx*(jdx+1)+jdx, '#', maxy)
+        # redraw bottom hline
         if len_win < 3:
-                screen.hline(screen.getmaxyx()[0]-2, 0 , '#', maxx)
+                screen.hline(screen.getmaxyx()[0]-2, 0 , '#', s_maxx)
         # put screen on top
         panels[screen_num].top()
         update_panels()
@@ -267,13 +273,18 @@ def main(stdscr):
                         screen.refresh()
                         # redraw hlines
                         len_win = len(windows[screen_num])
+                        s_maxy, s_maxx = screen.getmaxyx()
+                        y_len = round((s_maxy-2)/len_win)
                         for idx, wins in windows[screen_num].items():
-                                maxy = wins[0].getmaxyx()[0]
-                                maxx = screen.getmaxyx()[1]
+                                maxy, maxx = wins[0].getmaxyx()
                                 if idx < len_win - 1:
-                                        screen.hline(maxy*(idx+1)+idx, 0, '#', maxx)
+                                        screen.hline(y_len*(idx+1)+idx, 0, '#', s_maxx)
+                                for jdx, w in enumerate(wins):
+                                        if jdx < len(wins) - 1:
+                                                screen.vline(y_len*idx+idx, maxx*(jdx+1)+jdx, '#', maxy)
+                        # redraw bottom hline
                         if len_win < 3:
-                                screen.hline(screen.getmaxyx()[0]-2, 0 , '#', maxx)
+                                screen.hline(s_maxy-2, 0 , '#', s_maxx)
                         # push screen to top panel
                         panels[screen_num].top()
                         update_panels()
