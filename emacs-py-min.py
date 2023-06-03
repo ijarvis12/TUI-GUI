@@ -126,6 +126,7 @@ def main(stdscr):
         windows = {}
         text_boxes = {}
 
+        # index vars
         screen_num = 0
         win_num = 0
 
