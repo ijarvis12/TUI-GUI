@@ -5,6 +5,7 @@ from curses import wrapper, window
 from curses.textpad import Textbox
 from curses.panel import panel, new_panel, update_panels
 
+# horizontally split windows on current screen to have +1 rows
 def split_win(screen_num, screens, windows):
         # clear screen of hlines
         screen = screens[screen_num]
@@ -46,6 +47,7 @@ def split_win(screen_num, screens, windows):
         # return textbox for editing
         return Textbox(win)
 
+# vertically split windows on current window row on current screen to have +1 columns
 def vsplit_win(screen_num, screens, win_num, windows):
         # ready the screen, windows
         screen = screens[screen_num]
@@ -89,6 +91,7 @@ def vsplit_win(screen_num, screens, win_num, windows):
         # return text box for editing
         return Textbox(win)
 
+# create new screen for editing to have +1 screens
 def create_screen(screens, panels, cmdlines, cmds, windows):
         # setup screen
         screens.append(curses.initscr())
@@ -119,6 +122,7 @@ def create_screen(screens, panels, cmdlines, cmds, windows):
         # return text box for text_boxes, and immediate editing
         return Textbox(win)
 
+# remove current screen to have -1 screens
 def remove_screen(screen_num, screens, panels, cmdlines, cmds, windows, text_boxes):
         # remove screen and associated objects
         del text_boxes[screen_num]
@@ -147,7 +151,7 @@ def remove_screen(screen_num, screens, panels, cmdlines, cmds, windows, text_box
         # return screen number
         return screen_num
 
-
+# remove last row of windows on current screen to have -1 rows
 def remove_win(screen_num, screens, windows, text_boxes):
         # clear screen of hlines
         screen = screens[screen_num]
@@ -191,6 +195,7 @@ def remove_win(screen_num, screens, windows, text_boxes):
         # return nothing
         return
 
+# main program loop
 def main(stdscr):
         # screen setup
         stdscr.clear()
