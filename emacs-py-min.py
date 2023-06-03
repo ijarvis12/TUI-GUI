@@ -14,7 +14,7 @@ def split_win(screen_num, screens, windows):
         # get useful properties
         windows = windows[screen_num]
         maxy0, maxx0 = screen.getmaxyx()
-        new_y_len = int(maxy0/(len(windows)+1))
+        new_y_len = int((maxy0-2)/(len(windows)+1))
         # loop through windows, resize, move, add hline
         for idx,w in enumerate(windows):
                w.resize(new_y_len, maxx0)
@@ -98,9 +98,8 @@ def remove_win(screen_num, screens, windows, text_boxes):
         for idx,w in enumerate(windows):
                 if idx > 0:
                         w.mvwin(new_y_len*idx+1, 0)
+                        screen.hline(new_y_len*idx, 0, '#', maxx0)
                 w.resize(new_y_len, maxx0)
-                y, x = w.getparyx()
-                screen.hline(y+new_y_len, 0, '#', maxx0)
                 w.refresh()
         # update screen
         screen.refresh()
