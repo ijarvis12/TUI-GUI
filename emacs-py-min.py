@@ -13,8 +13,9 @@ def split_win(screen_num, screens, windows):
         win = None
         # get useful properties
         windows = windows[screen_num]
+        len_win = len(windows)
         maxy0, maxx0 = screen.getmaxyx()
-        new_y_len = round((maxy0-2)/(len(windows)+1))
+        new_y_len = round((maxy0-2)/(len_win+1))
         # loop through windows, resize, move, add hline
         for idx,wins in windows.items():
                for w in wins:
@@ -26,13 +27,14 @@ def split_win(screen_num, screens, windows):
                screen.hline(new_y_len*(idx+1)+idx, 0, '#', maxx0)
         # create new window
         if len(windows) > 1:
-                win = screen.subwin(new_y_len-1, maxx0, len(windows)*new_y_len+len(windows), 0)
+                new_y_len_bool = True
         else:
-                win = screen.subwin(new_y_len, maxx0, len(windows)*new_y_len+len(windows), 0)
+                new_y_len_bool = False
+        win = screen.subwin(new_y_len-new_y_len_bool, maxx0, len_win*new_y_len+len_win, 0)
         win.idcok(True)
         win.idlok(True)
         win.scrollok(True)
-        windows[len(windows)] = [win]
+        windows[len_win] = [win]
         # bottom hline
         if len(windows) < 3:
                 screen.hline(maxy0-2, 0, '#', maxx0)
