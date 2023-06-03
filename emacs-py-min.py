@@ -10,7 +10,7 @@ def split_win(screen_num, screens, windows):
         screens[screen_num].clear()
         # window to create
         win = None
-        # usefull properties
+        # get useful properties
         maxy0, maxx0 = windows[screen_num][0].getmaxyx()
         new_y_len = int(maxy0*len(windows[screen_num])/(len(windows[screen_num])+1))
         # loop through windows, resize, move, add hline
@@ -85,15 +85,17 @@ def remove_win(screen_num, screens, windows):
         del windows[screen_num][-1]
         # get updated number of windows
         len_win = len(windows[screen_num])
-        # get usefull properties
-        maxy0, maxx0 = windows[screen_num][0].getmaxyx()
+        # get useful properties
+        if len_win > 1:
+                maxy0, maxx0 = windows[screen_num][0].getmaxyx()
+        else:
+                maxy0 = screens[screen_num].getmaxyx()[0]
+                maxx0 = screens[screen_num].getmaxyx()[1]
         new_y_len = int(maxy0*(prev_len_win/len_win))
         # loop through windows, moving, resizing, adding hlines
         for idx,w in enumerate(windows[screen_num]):
-                y, x = w.getparyx()
                 if idx > 0:
-                        newypos = int(y*(prev_len_win/len_win))
-                        w.mvwin(newypos, 0)
+                        w.mvwin(new_y_len*idx+1, 0)
                 w.resize(new_y_len, maxx0)
                 y, x = w.getparyx()
                 screens[screen_num].hline(y+new_y_len, 0, '#', maxx0)
