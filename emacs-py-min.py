@@ -182,7 +182,7 @@ def remove_win(screen_num, screens, windows, text_boxes):
                                 w.resize(new_y_len, maxx)
                         # redraw vlines
                         if jdx < len(wins) - 1:
-                                screen.vline(y, maxx*(jdx+1)+jdx, '#', maxx)
+                                screen.vline(new_y_len*idx+idx, maxx*(jdx+1)+jdx, '#', new_y_len)
                         w.refresh()
                 # redraw hlines
                 if idx < len(windows) - 1:
