@@ -27,6 +27,9 @@ def split_win(screen_num, screens, windows):
         win.idlok(True)
         win.scrollok(True)
         windows.append(win)
+        # bottom hline
+        if len(windows) != 3:
+                screen.hline(maxy0-2, 0, '#', maxx0)
         screen.refresh()
         # return textbox for editing
         return Textbox(win)
@@ -48,6 +51,8 @@ def create_screen(screen_num, screens, panels, cmdlines, cmds, windows):
 
         # setup window
         win = screens[screen_num].subwin(maxy-2, maxx, 0, 0)
+        screens[screen_num].hline(maxy-2, 0, '#', maxx)
+        screens[screen_num].refresh()
         win.idcok(True)
         win.idlok(True)
         win.scrollok(True)
@@ -88,19 +93,24 @@ def remove_win(screen_num, screens, windows, text_boxes):
         del windows[-1]
         # get useful properties
         len_win = len(windows)
-        if len_win > 1:
-                maxy0, maxx0 = screen.getmaxyx()
+        maxy0, maxx0 = screen.getmaxyx()
+        if len_win == 3:
+                new_y_len = int((maxy0-2)/len_win)-1
+        elif len_win > 1:
                 new_y_len = int((maxy0-2)/len_win)
         else:
-                maxy0, maxx0 = screen.getmaxyx()
                 new_y_len = maxy0-2
         # loop through windows, moving, resizing, adding hlines
+        # somewhat of a hack using idx for precise placement
         for idx,w in enumerate(windows):
                 if idx > 0:
-                        w.mvwin(new_y_len*idx+1, 0)
-                        screen.hline(new_y_len*idx, 0, '#', maxx0)
+                        w.mvwin(new_y_len*idx+idx, 0)
                 w.resize(new_y_len, maxx0)
                 w.refresh()
+                if idx > 0:
+                        screen.hline(new_y_len*(idx+1)+idx, 0, '#', maxx0)
+                else:
+                        screen.hline(new_y_len, 0, '#', maxx0)
         # update screen
         screen.refresh()
         # return nothing
