@@ -245,7 +245,7 @@ def main(stdscr):
 
                 # remove window
                 elif c == 'rw ':
-                        if len(windows[screen_num]) > 1:
+                        if len(windows[screen_num]) > 1 or len(windows[screen_num][win_num[0]]) > 1:
                                 remove_win(screen_num, screens, windows, text_boxes)
                                 win_num = [0, 0]
                         text_boxes[screen_num][win_num[0]][win_num[1]].edit()
