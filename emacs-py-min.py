@@ -13,33 +13,80 @@ def split_win(screen_num, screens, windows):
         win = None
         # get useful properties
         windows = windows[screen_num]
-        len_win = len(windows)
+        len_win_rows = len(windows)
         maxy0, maxx0 = screen.getmaxyx()
-        new_y_len = round((maxy0-2)/(len_win+1))
-        # loop through windows, resize, move, add hline
-        for idx,wins in windows.items():
-               for w in wins:
+        new_y_len = round((maxy0-2)/(len_win_rows+1))
+        # loop through windows, resize, move, add hlines, vlines
+        for idx, wins in windows.items():
+               for jdx, w in enumerate(wins):
                        maxy, maxx = w.getmaxyx()
                        y, x = w.getparyx()
                        w.resize(new_y_len, maxx)
                        w.mvwin(new_y_len*idx+idx, x)
+                       # redraw vline if necessary
+                       if jdx < len(wins) - 1:
+                               screen.vline(new_y_len*idx+idx, maxx*(jdx+1)+jdx, '#', new_y_len)
                        w.refresh()
+               # redraw hlines
                screen.hline(new_y_len*(idx+1)+idx, 0, '#', maxx0)
         # create new window
-        if len(windows) > 1:
+        if len_win_rows > 1:
                 new_y_len_bool = True
         else:
                 new_y_len_bool = False
-        win = screen.subwin(new_y_len-new_y_len_bool, maxx0, len_win*new_y_len+len_win, 0)
+        win = screen.subwin(new_y_len-new_y_len_bool, maxx0, len_win_rows*new_y_len+len_win_rows, 0)
         win.idcok(True)
         win.idlok(True)
         win.scrollok(True)
-        windows[len_win] = [win]
+        windows[len_win_rows] = [win]
         # bottom hline
         if len(windows) < 3:
                 screen.hline(maxy0-2, 0, '#', maxx0)
         screen.refresh()
         # return textbox for editing
+        return Textbox(win)
+
+def vsplit_win(screen_num, screens, win_num, windows):
+        # ready the screen, windows
+        screen = screens[screen_num]
+        screen.clear()
+        windows = windows[screen_num]
+        win_num_0, win_num_1 = win_num
+        wins = windows[win_num_0]
+        len_win_cols = len(wins)
+        maxy0 = wins[0].getmaxyx()[0]
+        s_maxy, s_maxx = screen.getmaxyx()
+        # window to create
+        win = None
+        new_x_len = round(s_maxx/(len_win_cols+1))
+        for idx, window in enumerate(wins):
+                y, x = window.getparyx()
+                maxy, maxx = window.getmaxyx()
+                window.resize(maxy, new_x_len-1)
+                window.mvwin(y, idx*new_x_len+idx)
+                #screen.vline(y, (idx+1)*new_x_len, '#', maxy)
+                window.refresh()
+        win = screen.subwin(maxy0, new_x_len-1, wins[0].getparyx()[0], len_win_cols*new_x_len+len_win_cols)
+        win.idcok(True)
+        win.idlok(True)
+        win.scrollok(True)
+        wins.append(win)
+        # redraw hlines, vlines
+        len_win_rows = len(windows)
+        y_len = round((s_maxy-2)/len_win_rows)
+        for idx, wins in windows.items():
+                if idx < len_win_rows - 1:
+                        screen.hline(y_len*(idx+1)+idx, 0, '#', s_maxx)
+                # redraw vlines
+                maxx = wins[0].getmaxyx()[1]
+                for jdx, w in enumerate(wins):
+                        if jdx < len(wins) - 1:
+                                screen.vline(y_len*idx+idx, (jdx+1)*maxx+jdx, '#', y_len)
+        # redraw bottom hline
+        if len_win_rows < 3:
+                screen.hline(screen.getmaxyx()[0]-2, 0 , '#', screen.getmaxyx()[1])
+        screen.refresh()
+        # return text box for editing
         return Textbox(win)
 
 def create_screen(screens, panels, cmdlines, cmds, windows):
@@ -107,7 +154,7 @@ def remove_win(screen_num, screens, windows, text_boxes):
         screen.clear()
         # get windows object list
         windows = windows[screen_num]
-        # remove last window
+        # remove last row of windows
         del text_boxes[screen_num][len(windows)-1]
         del windows[len(windows)-1]
         # get useful properties
@@ -117,10 +164,10 @@ def remove_win(screen_num, screens, windows, text_boxes):
                 new_y_len = round((maxy0-2)/len_win)
         else:
                 new_y_len = maxy0-2
-        # loop through windows, moving, resizing, adding hlines
+        # loop through windows, moving, resizing, adding hlines, vlines
         # somewhat of a hack using idx for precise placement
-        for idx,wins in windows.items():
-                for w in wins:
+        for idx, wins in windows.items():
+                for jdx, w in enumerate(wins):
                         y, x = w.getparyx()
                         maxy, maxx = w.getmaxyx()
                         if idx > 0:
@@ -129,9 +176,14 @@ def remove_win(screen_num, screens, windows, text_boxes):
                                 w.resize(new_y_len-1, maxx)
                         else:
                                 w.resize(new_y_len, maxx)
+                        # redraw vlines
+                        if jdx < len(wins) - 1:
+                                screen.vline(y, maxx*(jdx+1)+jdx, '#', maxx)
                         w.refresh()
+                # redraw hlines
                 if idx < len(windows) - 1:
                         screen.hline(new_y_len*(idx+1)+idx, 0, '#', maxx0)
+        # bottome hline
         if len(windows) < 3:
                 screen.hline(maxy0-2, 0, '#', maxx0)
         # update screen
@@ -176,6 +228,14 @@ def main(stdscr):
                                 text_boxes[screen_num][win_num[0]] = [split_win(screen_num, screens, windows)]
                                 text_boxes[screen_num][win_num[0]][win_num[1]].edit()
 
+                # new vertical window
+                elif c == 'nwv ':
+                        len_wins = len(windows[screen_num][win_num[0]])
+                        if len_wins < 3:
+                                text_boxes[screen_num][win_num[0]].append(vsplit_win(screen_num, screens, win_num, windows))
+                                win_num = [win_num[0], len_wins]
+                                text_boxes[screen_num][win_num[0]][win_num[1]].edit()
+
                 # remove screen
                 elif c == 'r ':
                         if len(screens) > 1:
@@ -203,7 +263,8 @@ def main(stdscr):
                         # redraw hlines
                         len_win = len(windows[screen_num])
                         for idx, wins in windows[screen_num].items():
-                                maxy, maxx = wins[0].getmaxyx()
+                                maxy = wins[0].getmaxyx()[0]
+                                maxx = screen.getmaxyx()[1]
                                 if idx < len_win - 1:
                                         screen.hline(maxy*(idx+1)+idx, 0, '#', maxx)
                         if len_win < 3:
