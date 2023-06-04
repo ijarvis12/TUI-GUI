@@ -21,12 +21,8 @@ def update_statusline(screen_num, screen, win_num, len_win_rows, status):
         else:
                 statusline = '### Screen '+ str(screen_num) + ' Window ' + str(win_num) + ' '
         # redraw bottom hline (statusline)
-        if len_win_rows < 3:
-                screen.insstr(s_maxy-2, 0, statusline)
-                screen.hline(s_maxy-2, len(statusline) , '#', s_maxx-len(statusline))
-        else:
-                screen.insstr(y_len*(len_win_rows-1)+len_win_rows-2, 0, statusline)
-                screen.hline(y_len*(len_win_rows-1)+len_win_rows-2, len(statusline), '#', s_maxx-len(statusline))
+        screen.insstr(s_maxy-2, 0, statusline)
+        screen.hline(s_maxy-2, len(statusline) , '#', s_maxx-len(statusline))
         screen.refresh()
         # return nothing
         return
@@ -289,9 +285,9 @@ def main(stdscr):
 
                 # new window
                 elif c == 'nw' or c =='new win' or c == 'new window':
-                        # limit horizontal splits to 4
+                        # limit horizontal splits to 2
                         len_wins = len(wins)
-                        if len_wins < 4:
+                        if len_wins < 2:
                                 win_num = [len_wins, 0]
                                 text_boxes[screen_num][win_num[0]] = [split_win(screen_num, screen, win_num, wins)]
                                 update_text(windows[screen_num], text_boxes[screen_num], text_boxes_text[screen_num])
@@ -299,9 +295,9 @@ def main(stdscr):
 
                 # new vertical window
                 elif c == 'nwv' or c == 'new win vert' or c == 'new window vertical':
-                        # limit vertical splits to 3
+                        # limit vertical splits to 2
                         len_wins = len(wins[win_num[0]])
-                        if len_wins < 3:
+                        if len_wins < 2:
                                 text_boxes[screen_num][win_num[0]].append(vsplit_win(screen_num, screen, win_num, wins))
                                 update_text(windows[screen_num], text_boxes[screen_num], text_boxes_text[screen_num])
                                 win_num = [win_num[0], len_wins]
