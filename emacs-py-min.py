@@ -5,9 +5,26 @@ from curses import wrapper, window
 from curses.textpad import Textbox
 from curses.panel import panel, new_panel, update_panels
 
+# update statusline
+def update_statusline(screen_num, screen, win_num, len_win_rows, status=""):
+        s_maxy, s_maxx = screen.getmaxyx()
+        # redraw bottom hline
+        if len(status) > 0:
+                statusline = '### Error: ' + status + ' '
+        else:
+                statusline = '### Screen '+ str(screen_num) + ' Window ' + str(win_num) + ' '
+        if len_win_rows < 3:
+                screen.insstr(s_maxy-2, 0, statusline)
+                screen.hline(s_maxy-2, len(statusline) , '#', s_maxx)
+        else:
+                screen.insstr(y_len*(len_win_rows-1)+len_win_rows-2, 0, statusline)
+        screen.refresh()
+        # return nothing
+        return
+
+
 # redraw screen hlines, vlines
 def update_screen(screen_num, screen, win_num, windows):
-        screen.erase()
         # get vars
         s_maxy, s_maxx = screen.getmaxyx()
         len_win_rows = len(windows)
@@ -19,16 +36,11 @@ def update_screen(screen_num, screen, win_num, windows):
                 # redraw vlines
                 maxy, maxx = wins[0].getmaxyx()
                 for jdx, w in enumerate(wins):
+                        w.refresh()
                         if jdx < len(wins) - 1:
                                 screen.vline(y_len*idx+idx, (jdx+1)*maxx+jdx, '#', maxy)
-        # redraw bottom hline
-        statusline = '### Screen '+str(screen_num)+' Window '+str(win_num)+' '
-        if len_win_rows < 3:
-                screen.insstr(s_maxy-2, 0, statusline)
-                screen.hline(s_maxy-2, len(statusline) , '#', s_maxx)
-        else:
-                screen.insstr(y_len*(len_win_rows-1)+len_win_rows-2, 0, statusline)
-        screen.refresh()
+        # update statusline
+        update_statusline(screen_num, screen, win_num, len_win_rows)
         update_panels()
         curses.doupdate()
         # return nothing
@@ -67,7 +79,7 @@ def split_win(screen_num, screens, win_num, windows):
         # update screen
         update_screen(screen_num, screen, win_num, windows)
         # return textbox for editing
-        return Textbox(win)
+        return Textbox(win, insert_mode=True)
 
 # vertically split windows on current window row on current screen to have +1 columns
 def vsplit_win(screen_num, screens, win_num, windows):
@@ -98,7 +110,7 @@ def vsplit_win(screen_num, screens, win_num, windows):
         win_num = [win_num[0], win_num[1]+1]
         update_screen(screen_num, screen, win_num, windows)
         # return text box for editing
-        return Textbox(win)
+        return Textbox(win, insert_mode=True)
 
 # create new screen for editing to have +1 screens
 def create_screen(screens, panels, cmdlines, cmds, windows):
@@ -129,7 +141,7 @@ def create_screen(screens, panels, cmdlines, cmds, windows):
         update_screen(len(screens)-1, screen, win_num, windows[-1])
 
         # return text box for text_boxes, and immediate editing
-        return Textbox(win)
+        return Textbox(win, insert_mode=True)
 
 # remove current screen to have -1 screens
 def remove_screen(screen_num, screens, panels, cmdlines, cmds, windows, text_boxes):
@@ -280,15 +292,42 @@ def main(stdscr):
                                 win_num = [win_num[0]+1, 0]
                         else:
                                 win_num = [0, 0]
-                        # update statusline (by way of entire screen - i know)
-                        update_screen(screen_num, screens[screen_num], win_num, windows[screen_num])
+                        # update statusline
+                        update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]))
                         # edit correct text box
                         text_boxes[screen_num][win_num[0]][win_num[1]].edit()
+
+                elif c == 'fs ':
+                        text_to_save = text_boxes[screen_num][win_num[0]][win_num[1]].gather()
+                        cmdlines[screen_num].clear()
+                        cmds[screen_num].edit()
+                        c = cmds[screen_num].gather()
+                        try:
+                                with open(c[:-1], 'w') as filename:
+                                        filename.write(text_to_save)
+                        except:
+                                update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]), 'File Save Failed')
+
+                elif c == 'fo ':
+                        cmdlines[screen_num].clear()
+                        cmds[screen_num].edit()
+                        c = cmds[screen_num].gather()
+                        try:
+                                with open(c[:-1], 'r') as filename:
+                                        text_to_insert = filename.readlines()
+                                        y, x = windows[screen_num][win_num[0]][win_num[1]].getparyx()
+                                        for idx, textline in enumerate(text_to_insert):
+                                                windows[screen_num][win_num[0]][win_num[1]].addstr(y, x, textline)
+                                text_boxes[screen_num][win_num[0]][win_num[1]].edit()
+                        except:
+                                update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]), 'File Open Failed')
 
                 # get cmd from cmdline
                 cmdlines[screen_num].clear()
                 cmds[screen_num].edit()
                 c = cmds[screen_num].gather()
+                # update statusline
+                update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]))
 
 
         # end program
