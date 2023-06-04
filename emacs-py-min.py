@@ -12,7 +12,7 @@ def get_cmd(cmdline, cmd):
         return cmd.edit().strip(' ')
 
 # update statusline
-def update_statusline(screen_num, screen, win_num, len_win_rows, status=""):
+def update_statusline(screen_num, screen, win_num, len_win_rows, status):
         s_maxy, s_maxx = screen.getmaxyx()
         y_len = round((s_maxy-2)/len_win_rows)
         # statuline string
@@ -20,12 +20,13 @@ def update_statusline(screen_num, screen, win_num, len_win_rows, status=""):
                 statusline = '### ' + status + ' '
         else:
                 statusline = '### Screen '+ str(screen_num) + ' Window ' + str(win_num) + ' '
-        # redraw bottom hline
+        # redraw bottom hline (statusline)
         if len_win_rows < 3:
                 screen.insstr(s_maxy-2, 0, statusline)
-                screen.hline(s_maxy-2, len(statusline) , '#', s_maxx)
+                screen.hline(s_maxy-2, len(statusline) , '#', s_maxx-len(statusline))
         else:
                 screen.insstr(y_len*(len_win_rows-1)+len_win_rows-2, 0, statusline)
+                screen.hline(y_len*(len_win_rows-1)+len_win_rows-2, len(statusline), '#', s_maxx-len(statusline))
         screen.refresh()
         # return nothing
         return
@@ -48,7 +49,7 @@ def update_screen(screen_num, screen, win_num, windows):
                         if jdx < len(wins) - 1:
                                 screen.vline(y_len*idx+idx, (jdx+1)*maxx+jdx, '#', maxy)
         # update statusline
-        update_statusline(screen_num, screen, win_num, len_win_rows)
+        update_statusline(screen_num, screen, win_num, len_win_rows, "")
         curses.doupdate()
         # return nothing
         return
@@ -64,7 +65,10 @@ def get_text(text_box):
         return result
 
 # redisplay text boxes text
-def update_text(windows, text_boxes, text_boxes_text, prev_yx):
+def update_text(windows, text_boxes, text_boxes_text):
+        for idx, wins in windows.items():
+                for w in wins:
+                        w.clear()
         for win_row, win_texts in text_boxes_text.items():
                 for win_col, text in enumerate(win_texts):
                         windows[win_row][win_col].move(0, 0)
@@ -74,8 +78,8 @@ def update_text(windows, text_boxes, text_boxes_text, prev_yx):
         for idx, wins in windows.items():
                 for w in wins:
                         w.refresh()
-        # return previous (y, x)
-        return prev_yx
+        # return nothing
+        return
 
 
 
@@ -108,6 +112,7 @@ def split_win(screen_num, screen, win_num, windows):
         win.scrollok(True)
         windows[len_win_rows] = [win]
         # update screen
+        #win_num = [win_num[0]+1, 0]
         update_screen(screen_num, screen, win_num, windows)
         # return textbox for editing
         text_box = Textbox(win, insert_mode=True)
@@ -289,8 +294,7 @@ def main(stdscr):
                         if len_wins < 4:
                                 win_num = [len_wins, 0]
                                 text_boxes[screen_num][win_num[0]] = [split_win(screen_num, screen, win_num, wins)]
-                                coord = update_text(wins, text_boxes[screen_num], text_boxes_text[screen_num], curses.getsyx())
-                                screen.move(coord[0], coord[1])
+                                update_text(windows[screen_num], text_boxes[screen_num], text_boxes_text[screen_num])
                                 text_boxes_text[screen_num][win_num[0]] = [get_text(text_boxes[screen_num][win_num[0]][win_num[1]])]
 
                 # new vertical window
@@ -299,8 +303,7 @@ def main(stdscr):
                         len_wins = len(wins[win_num[0]])
                         if len_wins < 3:
                                 text_boxes[screen_num][win_num[0]].append(vsplit_win(screen_num, screen, win_num, wins))
-                                coord = update_text(wins, text_boxes[screen_num], text_boxes_text[screen_num], curses.getsyx())
-                                screen.move(coord[0], coord[1])
+                                update_text(windows[screen_num], text_boxes[screen_num], text_boxes_text[screen_num])
                                 win_num = [win_num[0], len_wins]
                                 text_boxes_text[screen_num][win_num[0]].append(get_text(text_boxes[screen_num][win_num[0]][win_num[1]]))
 
@@ -310,8 +313,7 @@ def main(stdscr):
                         if len(screens) > 1:
                                 del text_boxes_text[screen_num]
                                 screen_num = remove_screen(screen_num, screens, cmdlines, cmds, windows, text_boxes)
-                                coord = update_text(wins, text_boxes[screen_num], text_boxes_text[screen_num], curses.getsyx())
-                                screens[screen_num].move(coord[0], coord[1])
+                                update_text(windows[screen_num], text_boxes[screen_num], text_boxes_text[screen_num])
                                 win_num = [0, 0]
                         else: # else end program
                                 break
@@ -322,8 +324,7 @@ def main(stdscr):
                         if len(wins) > 1:
                                 remove_win(screen_num, screen, wins, text_boxes)
                                 del text_boxes_text[screen_num][len(wins)]
-                                coord = update_text(wins, text_boxes[screen_num], text_boxes_text[screen_num], curses.getsyx())
-                                screen.move(coord[0], coord[1])
+                                update_text(windows[screen_num], text_boxes[screen_num], text_boxes_text[screen_num])
                                 win_num = [0, 0]
                         text_boxes_text[screen_num][win_num[0]][win_num[1]] = get_text(text_boxes[screen_num][win_num[0]][win_num[1]])
 
@@ -340,8 +341,7 @@ def main(stdscr):
                         win_num = [0, 0]
                         # update screen
                         update_screen(screen_num, screen, win_num, wins)
-                        coord = update_text(wins, text_boxes[screen_num], text_boxes_text[screen_num], curses.getsyx())
-                        screen.move(coord[0], coord[1])
+                        update_text(windows[screen_num], text_boxes[screen_num], text_boxes_text[screen_num])
                         # edit default text box
                         text_boxes_text[screen_num][win_num[0]][win_num[1]] = get_text(text_boxes[screen_num][win_num[0]][win_num[1]])
 
@@ -355,7 +355,7 @@ def main(stdscr):
                         else:
                                 win_num = [0, 0]
                         # update statusline
-                        update_statusline(screen_num, screen, win_num, len(wins))
+                        update_statusline(screen_num, screen, win_num, len(wins), "")
                         # edit correct text box
                         text_boxes_text[screen_num][win_num[0]][win_num[1]] = get_text(text_boxes[screen_num][win_num[0]][win_num[1]])
 
@@ -383,7 +383,7 @@ def main(stdscr):
                                 update_statusline(screen_num, screen, win_num, len(wins), 'Save Successful')
                                 # update statusline
                                 sleep(1)
-                                update_statusline(screen_num, screen, win_num, len(wins))
+                                update_statusline(screen_num, screen, win_num, len(wins), "")
                                 # edit default text box with updated statusline
                                 text_boxes_text[screen_num][win_num[0]][win_num[1]] = get_text(text_boxes[screen_num][win_num[0]][win_num[1]])
                         except: # update statusline if failed
@@ -406,7 +406,7 @@ def main(stdscr):
                                                         text_box.do_command(ch)
                                                 text_box.do_command(curses.ascii.NL)
                                 # update statusline
-                                update_statusline(screen_num, screen, win_num, len(wins))
+                                update_statusline(screen_num, screen, win_num, len(wins), "")
                                 # edit default text box
                                 text_boxes_text[screen_num][win_num[0]][win_num[1]] = get_text(text_box)
                         except: # update statusline if failed
