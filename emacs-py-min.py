@@ -6,6 +6,7 @@ from curses.textpad import Textbox
 from curses.panel import panel, new_panel, update_panels
 
 from time import sleep
+from string import digits, ascii_letters, punctuation
 
 # get command from commandline
 def get_cmd(cmdline, cmd):
@@ -338,7 +339,12 @@ def main(stdscr):
                         # try to save file
                         try:
                                 with open(c[:-1], 'w') as filename:
-                                        filename.write(text_to_save)
+                                        result = ""
+                                        for line in text_to_save.split('\n'):
+                                                result += line.rstrip(' ') + '\n'
+                                        result = result.rstrip('\n')
+                                        result += '\n'
+                                        filename.write(result)
                                 # update statusline if successful
                                 update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]), 'Save Successful')
                                 # update statusline
@@ -364,6 +370,7 @@ def main(stdscr):
                                         for textline in text_to_insert:
                                                 for ch in textline:
                                                         text_box.do_command(ch)
+                                                text_box.do_command(curses.ascii.NL)
                                 # update statusline
                                 update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]))
                                 # edit default text box with statusline updated
