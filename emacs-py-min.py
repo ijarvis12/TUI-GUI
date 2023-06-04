@@ -64,17 +64,18 @@ def get_text(text_box):
         return result
 
 # redisplay text boxes text
-def update_text(windows, text_boxes, text_boxes_text):
+def update_text(windows, text_boxes, text_boxes_text, prev_yx):
         for win_row, win_texts in text_boxes_text.items():
                 for win_col, text in enumerate(win_texts):
+                        windows[win_row][win_col].move(0, 0)
                         for ch in text:
                                 text_boxes[win_row][win_col].do_command(ch)
                         text_boxes[win_row][win_col].do_command(curses.ascii.NL)
         for idx, wins in windows.items():
                 for w in wins:
                         w.refresh()
-        # return nothing
-        return
+        # return previous (y, x)
+        return prev_yx
 
 
 
@@ -244,7 +245,6 @@ def main(stdscr):
 
         # inital text box
         text_boxes.append({0:[create_screen(screens, cmdlines, cmds, windows)]})
-        text_boxes_text.append({0:[""]})
         text_boxes_text.append({0:[get_text(text_boxes[screen_num][win_num[0]][win_num[1]])]})
         # Ctrl-g to exit the text box
 
@@ -256,9 +256,6 @@ def main(stdscr):
                 wins = windows[screen_num]
                 cmdline = cmdlines[screen_num]
                 cmd = cmds[screen_num]
-
-                # update text boxes
-                update_text(wins, text_boxes[screen_num], text_boxes_text[screen_num])
 
                 # edit window number #[,#]
                 if c == 'e' or c == 'edit':
@@ -282,9 +279,8 @@ def main(stdscr):
                 elif c == 'n' or c == 'new' or c =='new screen':
                         screen_num = len(screens)
                         text_boxes.append({0:[create_screen(screens, cmdlines, cmds, windows)]})
-                        text_boxes_text.append({0:[""]})
                         win_num = [0, 0]
-                        text_boxes_text[screen_num].append({0:[get_text(text_boxes[screen_num][win_num[0]][win_num[1]])]})
+                        text_boxes_text.append({0:[get_text(text_boxes[screen_num][win_num[0]][win_num[1]])]})
 
                 # new window
                 elif c == 'nw' or c =='new win' or c == 'new window':
@@ -293,7 +289,8 @@ def main(stdscr):
                         if len_wins < 4:
                                 win_num = [len_wins, 0]
                                 text_boxes[screen_num][win_num[0]] = [split_win(screen_num, screen, win_num, wins)]
-                                update_text(wins, text_boxes[screen_num], text_boxes_text[screen_num])
+                                coord = update_text(wins, text_boxes[screen_num], text_boxes_text[screen_num], curses.getsyx())
+                                screen.move(coord[0], coord[1])
                                 text_boxes_text[screen_num][win_num[0]] = [get_text(text_boxes[screen_num][win_num[0]][win_num[1]])]
 
                 # new vertical window
@@ -302,7 +299,8 @@ def main(stdscr):
                         len_wins = len(wins[win_num[0]])
                         if len_wins < 3:
                                 text_boxes[screen_num][win_num[0]].append(vsplit_win(screen_num, screen, win_num, wins))
-                                update_text(wins, text_boxes[screen_num], text_boxes_text[screen_num])
+                                coord = update_text(wins, text_boxes[screen_num], text_boxes_text[screen_num], curses.getsyx())
+                                screen.move(coord[0], coord[1])
                                 win_num = [win_num[0], len_wins]
                                 text_boxes_text[screen_num][win_num[0]].append(get_text(text_boxes[screen_num][win_num[0]][win_num[1]]))
 
@@ -312,7 +310,8 @@ def main(stdscr):
                         if len(screens) > 1:
                                 del text_boxes_text[screen_num]
                                 screen_num = remove_screen(screen_num, screens, cmdlines, cmds, windows, text_boxes)
-                                update_text(wins, text_boxes[screen_num], text_boxes_text[screen_num])
+                                coord = update_text(wins, text_boxes[screen_num], text_boxes_text[screen_num], curses.getsyx())
+                                screens[screen_num].move(coord[0], coord[1])
                                 win_num = [0, 0]
                         else: # else end program
                                 break
@@ -323,7 +322,8 @@ def main(stdscr):
                         if len(wins) > 1:
                                 remove_win(screen_num, screen, wins, text_boxes)
                                 del text_boxes_text[screen_num][len(wins)]
-                                update_text(wins, text_boxes[screen_num], text_boxes_text[screen_num])
+                                coord = update_text(wins, text_boxes[screen_num], text_boxes_text[screen_num], curses.getsyx())
+                                screen.move(coord[0], coord[1])
                                 win_num = [0, 0]
                         text_boxes_text[screen_num][win_num[0]][win_num[1]] = get_text(text_boxes[screen_num][win_num[0]][win_num[1]])
 
@@ -340,7 +340,8 @@ def main(stdscr):
                         win_num = [0, 0]
                         # update screen
                         update_screen(screen_num, screen, win_num, wins)
-                        update_text(wins, text_boxes[screen_num], text_boxes_text[screen_num])
+                        coord = update_text(wins, text_boxes[screen_num], text_boxes_text[screen_num], curses.getsyx())
+                        screen.move(coord[0], coord[1])
                         # edit default text box
                         text_boxes_text[screen_num][win_num[0]][win_num[1]] = get_text(text_boxes[screen_num][win_num[0]][win_num[1]])
 
