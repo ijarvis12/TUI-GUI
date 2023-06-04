@@ -7,6 +7,12 @@ from curses.panel import panel, new_panel, update_panels
 
 from time import sleep
 
+# get command from commandline
+def get_cmd(cmdline, cmd):
+        cmdline.clear()
+        cmd.edit()
+        return cmd.gather()
+
 # update statusline
 def update_statusline(screen_num, screen, win_num, len_win_rows, status=""):
         s_maxy, s_maxx = screen.getmaxyx()
@@ -231,17 +237,14 @@ def main(stdscr):
 
 
         # run the program
-        cmds[screen_num].edit()
-        c = cmds[screen_num].gather()
+        c = get_cmd(cmdlines[screen_num], cmds[screen_num])
         while c != '':
                 # edit window number #[,#]
                 if c == 'e ':
                         # update statusline
                         update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]), 'Enter Window Number #[,#] To Edit:')
                         # get window number(s)
-                        cmdlines[screen_num].clear()
-                        cmds[screen_num].edit()
-                        c = cmds[screen_num].gather()
+                        c = get_cmd(cmdlines[screen_num], cmds[screen_num])
                         # try to edit window number, if exists
                         try:
                                 if len(c[:-1]) > 1:
@@ -332,9 +335,7 @@ def main(stdscr):
                         # update statusline
                         update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]), 'Filename To Save As: ')
                         # get filename
-                        cmdlines[screen_num].clear()
-                        cmds[screen_num].edit()
-                        c = cmds[screen_num].gather()
+                        c = get_cmd(cmdlines[screen_num], cmds[screen_num])
                         # try to save file
                         try:
                                 with open(c[:-1], 'w') as filename:
@@ -354,9 +355,7 @@ def main(stdscr):
                         # update statusline
                         update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]), 'File To Open: ')
                         # get filename
-                        cmdlines[screen_num].clear()
-                        cmds[screen_num].edit()
-                        c = cmds[screen_num].gather()
+                        c = get_cmd(cmdlines[screen_num], cmds[screen_num])
                         # try to open file
                         try:
                                 text_box = text_boxes[screen_num][win_num[0]][win_num[1]]
@@ -374,9 +373,7 @@ def main(stdscr):
                                 update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]), 'Error: File Open Failed')
 
                 # get cmd from cmdline
-                cmdlines[screen_num].clear()
-                cmds[screen_num].edit()
-                c = cmds[screen_num].gather()
+                c = get_cmd(cmdlines[screen_num], cmds[screen_num])
 
 
         # end program
