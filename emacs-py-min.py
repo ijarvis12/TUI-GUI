@@ -10,7 +10,7 @@ def update_statusline(screen_num, screen, win_num, len_win_rows, status=""):
         s_maxy, s_maxx = screen.getmaxyx()
         # statuline string
         if len(status) > 0:
-                statusline = '### Error: ' + status + ' '
+                statusline = '### ' + status + ' '
         else:
                 statusline = '### Screen '+ str(screen_num) + ' Window ' + str(win_num) + ' '
         # redraw bottom hline
@@ -78,7 +78,7 @@ def split_win(screen_num, screens, win_num, windows):
         win.idlok(True)
         win.scrollok(True)
         windows[len_win_rows] = [win]
-        text_boxes_text[screen_num][len_win_rows] = [""]
+        #####text_boxes_text[screen_num][len_win_rows] = [""]
         # update screen
         update_screen(screen_num, screen, win_num, windows)
         # return textbox for editing
@@ -109,7 +109,7 @@ def vsplit_win(screen_num, screens, win_num, windows):
         win.idlok(True)
         win.scrollok(True)
         wins.append(win)
-        text_boxes_text[screen_num][win_num[0]].append("")
+        #####text_boxes_text[screen_num][win_num[0]].append("")
         # update screen
         win_num = [win_num[0], win_num[1]+1]
         update_screen(screen_num, screen, win_num, windows)
@@ -137,7 +137,7 @@ def create_screen(screens, panels, cmdlines, cmds, windows):
         win.idlok(True)
         win.scrollok(True)
         windows.append({0:[win]})
-        text_boxes_text.append({0:[""]})
+        #####text_boxes_text.append({0:[""]})
 
         # update screen
         win_num = [0, 0]
@@ -149,7 +149,7 @@ def create_screen(screens, panels, cmdlines, cmds, windows):
 # remove current screen to have -1 screens
 def remove_screen(screen_num, screens, panels, cmdlines, cmds, windows, text_boxes):
         # remove screen and associated objects
-        del text_boxes_text[screen_num]
+        #####del text_boxes_text[screen_num]
         del text_boxes[screen_num]
         del windows[screen_num]
         del cmds[screen_num]
@@ -178,7 +178,7 @@ def remove_win(screen_num, screens, windows, text_boxes):
         windows = windows[screen_num]
         # remove last row of windows
         len_win = len(windows)
-        del text_boxes_text[screen_num][len_win - 1]
+        #####del text_boxes_text[screen_num][len_win - 1]
         del text_boxes[screen_num][len_win - 1]
         del windows[len_win - 1]
         # get useful properties
@@ -217,7 +217,7 @@ def main(stdscr):
         cmds = []
         windows = []
         text_boxes = []
-        text_boxes_text = []
+        #####text_boxes_text = []
 
         # index vars
         screen_num = 0
@@ -249,8 +249,8 @@ def main(stdscr):
 
                 # new vertical window
                 elif c == 'nwv ':
-                        len_wins = len(windows[screen_num][win_num[0]])
                         # limit vertical splits to 3
+                        len_wins = len(windows[screen_num][win_num[0]])
                         if len_wins < 3:
                                 text_boxes[screen_num][win_num[0]].append(vsplit_win(screen_num, screens, win_num, windows))
                                 win_num = [win_num[0], len_wins]
@@ -292,6 +292,7 @@ def main(stdscr):
 
                 # next window
                 elif c == 'w ':
+                        # window number arithmetic
                         if len(windows[screen_num][win_num[0]]) > 1 and win_num[1] < (len(windows[screen_num][win_num[0]]) - 1):
                                 win_num = [win_num[0], win_num[1]+1]
                         elif win_num[0] < (len(windows[screen_num]) - 1):
@@ -305,32 +306,43 @@ def main(stdscr):
 
                 # save to file
                 elif c == 'fs ':
+                        # get text box text to save
                         text_to_save = text_boxes[screen_num][win_num[0]][win_num[1]].gather()
+                        # update statusline
+                        update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]), 'Filename To Save As: ')
+                        # get filename
                         cmdlines[screen_num].clear()
                         cmds[screen_num].edit()
                         c = cmds[screen_num].gather()
+                        # try to save file
                         try:
                                 with open(c[:-1], 'w') as filename:
                                         filename.write(text_to_save)
-                        except:
-                                update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]), 'File Save Failed')
+                        except: # update statusline if failed
+                                update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]), 'Error: File Save Failed')
 
                 # open file
                 elif c == 'fo ':
+                        # update statusline
+                        update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]), 'File To Open: ')
+                        # get filename
                         cmdlines[screen_num].clear()
                         cmds[screen_num].edit()
                         c = cmds[screen_num].gather()
+                        # try to open file
                         try:
+                                text_box = text_boxes[screen_num][win_num[0]][win_num[1]]
                                 with open(c[:-1], 'r') as filename:
-                                        win = windows[screen_num][win_num[0]][win_num[1]]
-                                        win.erase()
                                         text_to_insert = filename.readlines()
-                                        y, x = win.getparyx()
-                                        for idx, textline in enumerate(text_to_insert):
-                                                win.addstr(y, x, textline)
-                                text_boxes[screen_num][win_num[0]][win_num[1]].edit()
-                        except:
-                                update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]), 'File Open Failed')
+                                        windows[screen_num][win_num[0]][win_num[1]].erase()
+                                        for textline in text_to_insert:
+                                                for ch in textline:
+                                                        text_box.do_command(ch)
+                                                text_box.do_command(curses.ascii.NL)
+                        except: # update statusline if failed
+                                update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]), 'Error: File Open Failed')
+                        finally: # edit default text box
+                                text_box.edit()
 
                 # get cmd from cmdline
                 cmdlines[screen_num].clear()
