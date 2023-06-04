@@ -53,6 +53,21 @@ def update_screen(screen_num, screen, win_num, windows):
         # return nothing
         return
 
+# redisplay text boxes text
+def update_text(windows, text_boxes, text_boxes_text):
+        for win_row, texts in text_boxes_text.items():
+                for idx, text in enumerate(texts):
+                        for ch in text:
+                                text_boxes[win_row][idx].do_command(ch)
+                        text_boxes[win_row][idx].do_command(curses.ascii.NL)
+        for idx, wins in windows.items():
+                for w in wins:
+                        w.refresh()
+        # return nothing
+        return
+
+
+
 # horizontally split windows on current screen to have +1 rows
 def split_win(screen_num, screen, win_num, windows):
         # clear screen of hlines, vlines
@@ -211,6 +226,7 @@ def main(stdscr):
         cmds = []
         windows = []
         text_boxes = []
+        text_boxes_text = []
 
         # index vars
         screen_num = 0
@@ -218,8 +234,9 @@ def main(stdscr):
 
         # inital text box
         text_boxes.append({0:[create_screen(screens, cmdlines, cmds, windows)]})
-        text_boxes[screen_num][win_num[0]][win_num[1]].edit() # Ctrl-g to exit the text_box
-
+        text_boxes_text.append({0:[""]})
+        text_boxes_text[screen_num][win_num[0]][win_num[1]] = text_boxes[screen_num][win_num[0]][win_num[1]].edit()
+        # Ctrl-g to exit the text box
 
         # run the program
         c = get_cmd(cmdlines[screen_num], cmds[screen_num])
@@ -229,6 +246,9 @@ def main(stdscr):
                 wins = windows[screen_num]
                 cmdline = cmdlines[screen_num]
                 cmd = cmds[screen_num]
+
+                # update text boxes
+                update_text(wins, text_boxes[screen_num], text_boxes_text[screen_num])
 
                 # edit window number #[,#]
                 if c == 'e' or c == 'edit':
@@ -245,14 +265,15 @@ def main(stdscr):
                         except: # update statusline if bad number
                                 update_statusline(screen_num, screen, win_num, len(wins), 'Window Does Not Exist')
                         finally: # edit default text box
-                                text_boxes[screen_num][win_num[0]][win_num[1]].edit()
+                                text_boxes_text[screen_num][win_num[0]][win_num[1]] = text_boxes[screen_num][win_num[0]][win_num[1]].edit()
 
                 # new screen
                 elif c == 'n' or c == 'new' or c =='new screen':
                         screen_num = len(screens)
                         text_boxes.append({0:[create_screen(screens, cmdlines, cmds, windows)]})
+                        text_boxes_text.append({0:[""]})
                         win_num = [0, 0]
-                        text_boxes[screen_num][win_num[0]][win_num[1]].edit()
+                        text_boxes_text[screen_num][win_num[0]][win_num[1]] = text_boxes[screen_num][win_num[0]][win_num[1]].edit()
 
                 # new window
                 elif c == 'nw' or c =='new win' or c == 'new window':
@@ -261,7 +282,8 @@ def main(stdscr):
                         if len_wins < 4:
                                 win_num = [len_wins, 0]
                                 text_boxes[screen_num][win_num[0]] = [split_win(screen_num, screen, win_num, wins)]
-                                text_boxes[screen_num][win_num[0]][win_num[1]].edit()
+                                update_text(wins, text_boxes[screen_num], text_boxes_text[screen_num])
+                                text_boxes_text[screen_num][win_num[0]] = [text_boxes[screen_num][win_num[0]][win_num[1]].edit()]
 
                 # new vertical window
                 elif c == 'nwv' or c == 'new win vert' or c == 'new window vertical':
@@ -269,25 +291,30 @@ def main(stdscr):
                         len_wins = len(wins[win_num[0]])
                         if len_wins < 3:
                                 text_boxes[screen_num][win_num[0]].append(vsplit_win(screen_num, screen, win_num, wins))
+                                update_text(wins, text_boxes[screen_num], text_boxes_text[screen_num])
                                 win_num = [win_num[0], len_wins]
-                                text_boxes[screen_num][win_num[0]][win_num[1]].edit()
+                                text_boxes_text[screen_num][win_num[0]].append(text_boxes[screen_num][win_num[0]][win_num[1]].edit())
 
                 # remove screen
                 elif c == 'r' or c == 'remove' or c == 'remove screen':
                         # remove screen if more than one exists
                         if len(screens) > 1:
+                                del text_boxes_text[screen_num]
                                 screen_num = remove_screen(screen_num, screens, cmdlines, cmds, windows, text_boxes)
+                                update_text(wins, text_boxes[screen_num], text_boxes_text[screen_num])
                                 win_num = [0, 0]
                         else: # else end program
                                 break
-                        text_boxes[screen_num][win_num[0]][win_num[1]].edit()
+                        text_boxes_text[screen_num][win_num[0]][win_num[1]] = text_boxes[screen_num][win_num[0]][win_num[1]].edit()
 
                 # remove window
                 elif c == 'rw' or c == 'remove win' or c == 'remove window':
                         if len(wins) > 1:
                                 remove_win(screen_num, screen, wins, text_boxes)
+                                del text_boxes_text[screen_num][len(wins)]
+                                update_text(wins, text_boxes[screen_num], text_boxes_text[screen_num])
                                 win_num = [0, 0]
-                        text_boxes[screen_num][win_num[0]][win_num[1]].edit()
+                        text_boxes_text[screen_num][win_num[0]][win_num[1]] = text_boxes[screen_num][win_num[0]][win_num[1]].edit()
 
                 # next screen
                 elif c == 's' or c == 'screen':
@@ -302,8 +329,9 @@ def main(stdscr):
                         win_num = [0, 0]
                         # update screen
                         update_screen(screen_num, screen, win_num, wins)
+                        update_text(wins, text_boxes[screen_num], text_boxes_text[screen_num])
                         # edit default text box
-                        text_boxes[screen_num][win_num[0]][win_num[1]].edit()
+                        text_boxes_text[screen_num][win_num[0]][win_num[1]] = text_boxes[screen_num][win_num[0]][win_num[1]].edit()
 
                 # next window
                 elif c == 'w' or c == 'win' or c == 'window':
@@ -317,7 +345,7 @@ def main(stdscr):
                         # update statusline
                         update_statusline(screen_num, screen, win_num, len(wins))
                         # edit correct text box
-                        text_boxes[screen_num][win_num[0]][win_num[1]].edit()
+                        text_boxes_text[screen_num][win_num[0]][win_num[1]] = text_boxes[screen_num][win_num[0]][win_num[1]].edit()
 
                 # save to file
                 elif c == 'fs' or c == 'file save' or c == 'file save as':
@@ -345,7 +373,7 @@ def main(stdscr):
                                 sleep(1)
                                 update_statusline(screen_num, screen, win_num, len(wins))
                                 # edit default text box with updated statusline
-                                text_boxes[screen_num][win_num[0]][win_num[1]].edit()
+                                text_boxes_text[screen_num][win_num[0]][win_num[1]] = text_boxes[screen_num][win_num[0]][win_num[1]].edit()
                         except: # update statusline if failed
                                 update_statusline(screen_num, screen, win_num, len(wins), 'Error: File Save Failed')
 
@@ -367,8 +395,8 @@ def main(stdscr):
                                                 text_box.do_command(curses.ascii.NL)
                                 # update statusline
                                 update_statusline(screen_num, screen, win_num, len(wins))
-                                # edit default text box with statusline updated
-                                text_box.edit()
+                                # edit default text box
+                                text_boxes_text[screen_num][win_num[0]][win_num[1]] = text_box.edit()
                         except: # update statusline if failed
                                 update_statusline(screen_num, screen, win_num, len(wins), 'Error: File Open Failed')
 
