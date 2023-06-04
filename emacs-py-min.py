@@ -5,6 +5,8 @@ from curses import wrapper, window
 from curses.textpad import Textbox
 from curses.panel import panel, new_panel, update_panels
 
+from time import sleep
+
 # update statusline
 def update_statusline(screen_num, screen, win_num, len_win_rows, status=""):
         s_maxy, s_maxx = screen.getmaxyx()
@@ -78,11 +80,12 @@ def split_win(screen_num, screens, win_num, windows):
         win.idlok(True)
         win.scrollok(True)
         windows[len_win_rows] = [win]
-        #####text_boxes_text[screen_num][len_win_rows] = [""]
         # update screen
         update_screen(screen_num, screen, win_num, windows)
         # return textbox for editing
-        return Textbox(win, insert_mode=True)
+        text_box = Textbox(win, insert_mode=True)
+        text_box.stripspaces = False
+        return text_box
 
 # vertically split windows on current window row on current screen to have +1 columns
 def vsplit_win(screen_num, screens, win_num, windows):
@@ -109,12 +112,13 @@ def vsplit_win(screen_num, screens, win_num, windows):
         win.idlok(True)
         win.scrollok(True)
         wins.append(win)
-        #####text_boxes_text[screen_num][win_num[0]].append("")
         # update screen
         win_num = [win_num[0], win_num[1]+1]
         update_screen(screen_num, screen, win_num, windows)
         # return text box for editing
-        return Textbox(win, insert_mode=True)
+        text_box = Textbox(win, insert_mode=True)
+        text_box.stripspaces = False
+        return text_box
 
 # create new screen for editing to have +1 screens
 def create_screen(screens, panels, cmdlines, cmds, windows):
@@ -137,19 +141,19 @@ def create_screen(screens, panels, cmdlines, cmds, windows):
         win.idlok(True)
         win.scrollok(True)
         windows.append({0:[win]})
-        #####text_boxes_text.append({0:[""]})
 
         # update screen
         win_num = [0, 0]
         update_screen(len(screens)-1, screen, win_num, windows[-1])
 
         # return text box for text_boxes, and immediate editing
-        return Textbox(win, insert_mode=True)
+        text_box = Textbox(win, insert_mode=True)
+        text_box.stripspaces = False
+        return text_box
 
 # remove current screen to have -1 screens
 def remove_screen(screen_num, screens, panels, cmdlines, cmds, windows, text_boxes):
         # remove screen and associated objects
-        #####del text_boxes_text[screen_num]
         del text_boxes[screen_num]
         del windows[screen_num]
         del cmds[screen_num]
@@ -178,7 +182,6 @@ def remove_win(screen_num, screens, windows, text_boxes):
         windows = windows[screen_num]
         # remove last row of windows
         len_win = len(windows)
-        #####del text_boxes_text[screen_num][len_win - 1]
         del text_boxes[screen_num][len_win - 1]
         del windows[len_win - 1]
         # get useful properties
@@ -217,7 +220,6 @@ def main(stdscr):
         cmds = []
         windows = []
         text_boxes = []
-        #####text_boxes_text = []
 
         # index vars
         screen_num = 0
@@ -232,8 +234,27 @@ def main(stdscr):
         cmds[screen_num].edit()
         c = cmds[screen_num].gather()
         while c != '':
+                # edit window number #[,#]
+                if c == 'e ':
+                        # update statusline
+                        update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]), 'Enter Window Number #[,#] To Edit:')
+                        # get window number(s)
+                        cmdlines[screen_num].clear()
+                        cmds[screen_num].edit()
+                        c = cmds[screen_num].gather()
+                        # try to edit window number, if exists
+                        try:
+                                if len(c[:-1]) > 1:
+                                        win_num = [int(c[0]), int(c[2])]
+                                else:
+                                        win_num = [int(c[0]), 0]
+                        except: # update statusline if bad number
+                                update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]), 'Window Does Not Exist')
+                        finally: # edit default text box
+                                text_boxes[screen_num][win_num[0]][win_num[1]].edit()
+
                 # new screen
-                if c == 'n ':
+                elif c == 'n ':
                         screen_num = len(screens)
                         text_boxes.append({0:[create_screen(screens, panels, cmdlines, cmds, windows)]})
                         win_num = [0, 0]
@@ -318,6 +339,13 @@ def main(stdscr):
                         try:
                                 with open(c[:-1], 'w') as filename:
                                         filename.write(text_to_save)
+                                # update statusline if successful
+                                update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]), 'Save Successful')
+                                # update statusline
+                                sleep(1)
+                                update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]))
+                                # edit default text box with updated statusline
+                                text_boxes[screen_num][win_num[0]][win_num[1]].edit()
                         except: # update statusline if failed
                                 update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]), 'Error: File Save Failed')
 
@@ -338,18 +366,17 @@ def main(stdscr):
                                         for textline in text_to_insert:
                                                 for ch in textline:
                                                         text_box.do_command(ch)
-                                                text_box.do_command(curses.ascii.NL)
+                                # update statusline
+                                update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]))
+                                # edit default text box with statusline updated
+                                text_box.edit()
                         except: # update statusline if failed
                                 update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]), 'Error: File Open Failed')
-                        finally: # edit default text box
-                                text_box.edit()
 
                 # get cmd from cmdline
                 cmdlines[screen_num].clear()
                 cmds[screen_num].edit()
                 c = cmds[screen_num].gather()
-                # update statusline
-                update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]))
 
 
         # end program
