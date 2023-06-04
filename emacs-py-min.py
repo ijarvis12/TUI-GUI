@@ -9,7 +9,7 @@ from time import sleep
 # get command from commandline
 def get_cmd(cmdline, cmd):
         cmdline.clear()
-        return cmd.edit().strip(' ')
+        return cmd.edit().strip(' ').lower()
 
 # update statusline
 def update_statusline(screen_num, screen, win_num, len_win_rows, status):
@@ -251,6 +251,21 @@ def main(stdscr):
 
         # run the program
         c = get_cmd(cmdlines[screen_num], cmds[screen_num])
+        # check for unsaved work before quitting
+        if len(c) < 1:
+                flag = False
+                for screen_text in text_boxes_text:
+                        for idx, texts in screen_text.items():
+                                for text in texts:
+                                        if len(text) > 0:
+                                                flag = True
+                if flag:
+                        update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]), 'Possibly Unsaved Work. Quit Anyways? [y/N] ')
+                        c = get_cmd(cmdlines[screen_num], cmds[screen_num])
+                        if 'y' in c:
+                                pass
+                        else:
+                                c = 'e'
         while c != '':
                 # get info
                 screen = screens[screen_num]
@@ -410,6 +425,21 @@ def main(stdscr):
 
                 # get cmd from cmdline
                 c = get_cmd(cmdlines[screen_num], cmds[screen_num])
+                # check for unsaved work before quitting
+                if len(c) < 1:
+                        flag = False
+                        for screen_text in text_boxes_text:
+                                for idx, texts in screen_text.items():
+                                        for text in texts:
+                                                if len(text) > 0:
+                                                        flag = True
+                        if flag:
+                                update_statusline(screen_num, screen, win_num, len(wins), 'Possibly Unsaved Work. Quit Anyways? [y/N] ')
+                                c = get_cmd(cmdlines[screen_num], cmds[screen_num])
+                                if 'y' in c:
+                                        break
+                                else:
+                                        continue
 
 
         # end program
