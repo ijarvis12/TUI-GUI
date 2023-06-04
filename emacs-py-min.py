@@ -8,11 +8,12 @@ from curses.panel import panel, new_panel, update_panels
 # update statusline
 def update_statusline(screen_num, screen, win_num, len_win_rows, status=""):
         s_maxy, s_maxx = screen.getmaxyx()
-        # redraw bottom hline
+        # statuline string
         if len(status) > 0:
                 statusline = '### Error: ' + status + ' '
         else:
                 statusline = '### Screen '+ str(screen_num) + ' Window ' + str(win_num) + ' '
+        # redraw bottom hline
         if len_win_rows < 3:
                 screen.insstr(s_maxy-2, 0, statusline)
                 screen.hline(s_maxy-2, len(statusline) , '#', s_maxx)
@@ -25,6 +26,7 @@ def update_statusline(screen_num, screen, win_num, len_win_rows, status=""):
 
 # redraw screen hlines, vlines
 def update_screen(screen_num, screen, win_num, windows):
+        screen.clear()
         # get vars
         s_maxy, s_maxx = screen.getmaxyx()
         len_win_rows = len(windows)
@@ -76,6 +78,7 @@ def split_win(screen_num, screens, win_num, windows):
         win.idlok(True)
         win.scrollok(True)
         windows[len_win_rows] = [win]
+        text_boxes_text[screen_num][len_win_rows] = [""]
         # update screen
         update_screen(screen_num, screen, win_num, windows)
         # return textbox for editing
@@ -106,6 +109,7 @@ def vsplit_win(screen_num, screens, win_num, windows):
         win.idlok(True)
         win.scrollok(True)
         wins.append(win)
+        text_boxes_text[screen_num][win_num[0]].append("")
         # update screen
         win_num = [win_num[0], win_num[1]+1]
         update_screen(screen_num, screen, win_num, windows)
@@ -116,8 +120,6 @@ def vsplit_win(screen_num, screens, win_num, windows):
 def create_screen(screens, panels, cmdlines, cmds, windows):
         # setup screen
         screens.append(curses.initscr())
-        for s in screens:
-                s.erase()
         screen = screens[-1]
         panels.append(new_panel(screen))
         panels[-1].top()
@@ -135,6 +137,7 @@ def create_screen(screens, panels, cmdlines, cmds, windows):
         win.idlok(True)
         win.scrollok(True)
         windows.append({0:[win]})
+        text_boxes_text.append({0:[""]})
 
         # update screen
         win_num = [0, 0]
@@ -146,6 +149,7 @@ def create_screen(screens, panels, cmdlines, cmds, windows):
 # remove current screen to have -1 screens
 def remove_screen(screen_num, screens, panels, cmdlines, cmds, windows, text_boxes):
         # remove screen and associated objects
+        del text_boxes_text[screen_num]
         del text_boxes[screen_num]
         del windows[screen_num]
         del cmds[screen_num]
@@ -157,12 +161,11 @@ def remove_screen(screen_num, screens, panels, cmdlines, cmds, windows, text_box
         screen = screens[screen_num]
         screen.clear()
         screen.refresh()
-        windows = windows[screen_num]
         # put screen on top
         panels[screen_num].top()
         # update screen
         win_num = [0, 0]
-        update_screen(screen_num, screen, win_num, windows)
+        update_screen(screen_num, screen, win_num, windows[screen_num])
         # return screen number
         return screen_num
 
@@ -174,8 +177,10 @@ def remove_win(screen_num, screens, windows, text_boxes):
         # get windows object list
         windows = windows[screen_num]
         # remove last row of windows
-        del text_boxes[screen_num][len(windows)-1]
-        del windows[len(windows)-1]
+        len_win = len(windows)
+        del text_boxes_text[screen_num][len_win - 1]
+        del text_boxes[screen_num][len_win - 1]
+        del windows[len_win - 1]
         # get useful properties
         len_win = len(windows)
         s_maxy, s_maxx = screen.getmaxyx()
@@ -212,6 +217,7 @@ def main(stdscr):
         cmds = []
         windows = []
         text_boxes = []
+        text_boxes_text = []
 
         # index vars
         screen_num = 0
@@ -297,6 +303,7 @@ def main(stdscr):
                         # edit correct text box
                         text_boxes[screen_num][win_num[0]][win_num[1]].edit()
 
+                # save to file
                 elif c == 'fs ':
                         text_to_save = text_boxes[screen_num][win_num[0]][win_num[1]].gather()
                         cmdlines[screen_num].clear()
@@ -308,16 +315,19 @@ def main(stdscr):
                         except:
                                 update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]), 'File Save Failed')
 
+                # open file
                 elif c == 'fo ':
                         cmdlines[screen_num].clear()
                         cmds[screen_num].edit()
                         c = cmds[screen_num].gather()
                         try:
                                 with open(c[:-1], 'r') as filename:
+                                        win = windows[screen_num][win_num[0]][win_num[1]]
+                                        win.erase()
                                         text_to_insert = filename.readlines()
-                                        y, x = windows[screen_num][win_num[0]][win_num[1]].getparyx()
+                                        y, x = win.getparyx()
                                         for idx, textline in enumerate(text_to_insert):
-                                                windows[screen_num][win_num[0]][win_num[1]].addstr(y, x, textline)
+                                                win.addstr(y, x, textline)
                                 text_boxes[screen_num][win_num[0]][win_num[1]].edit()
                         except:
                                 update_statusline(screen_num, screens[screen_num], win_num, len(windows[screen_num]), 'File Open Failed')
