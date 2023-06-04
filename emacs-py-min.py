@@ -10,8 +10,7 @@ from time import sleep
 # get command from commandline
 def get_cmd(cmdline, cmd):
         cmdline.clear()
-        cmd.edit()
-        return cmd.gather()
+        return cmd.edit()
 
 # update statusline
 def update_statusline(screen_num, screen, win_num, len_win_rows, status=""):
