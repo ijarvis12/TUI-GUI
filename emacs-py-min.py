@@ -574,11 +574,9 @@ def main(stdscr):
                 # save file
                 with open(c, 'w') as filename:
                     result = ""
-                    for line in text_to_save.split('\n'):
-                        result += line.rstrip(' ') + '\n'
-                        result = result.rstrip('\n')
-                        result += '\n'
-                        filename.write(result)
+                    for line in text_to_save:
+                        result += line
+                    filename.write(result)
                 # update statusline if successful
                 update_statusline(screen_num, screen, win_num, len(wins), 'Save Successful')
                 # update statusline
@@ -596,22 +594,21 @@ def main(stdscr):
             # get filename
             c = get_cmd(cmdline, cmd)
             # try to open file
+            text_box = text_boxes[screen_num][win_num[0]][win_num[1]]
             try:
-                text_box = text_boxes[screen_num][win_num[0]][win_num[1]]
                 with open(c, 'r') as filename:
                     text_to_insert = filename.readlines()
-                    wins[win_num[0]][win_num[1]].erase()
+                    text_box.win.erase()
                     text_box.text = ['\n']
                     for textline in text_to_insert:
                         for ch in textline:
                             text_box.do_command(ord(ch))
-                        text_box.do_command(curses.ascii.NL)
                 # update statusline
                 update_statusline(screen_num, screen, win_num, len(wins), "")
-                # edit default text box
-                text_box.edit()
             except: # update statusline if failed
                 update_statusline(screen_num, screen, win_num, len(wins), 'Error: File Open Failed')
+            # edit default text box
+            text_box.edit()
 
         # get cmd from cmdline
         c = get_cmd(cmdlines[screen_num], cmds[screen_num])
