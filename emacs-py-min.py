@@ -13,7 +13,7 @@ class ScrollTextbox(Textbox):
             self.win.idcok(True)
             self.win.idlok(True)
             self.win.scrollok(True)
-            self.stripspaces = False
+            self.stripspaces = True
             self.line_num = self.win.getyx()[0]
             self.text = []
             for i in range(self.line_num):
@@ -25,9 +25,11 @@ class ScrollTextbox(Textbox):
         self._update_max_yx()
         (y, x) = self.win.getyx()
         self.lastcmd = ch
+        # sanity check
         if self.line_num > len(self.text) - 1:
             for i in range(len(self.text),self.line_num+1):
                 self.text.append('\n')
+        # print character
         if curses.ascii.isprint(ch):
             if y < self.maxy or x < self.maxx:
                 self._insert_printable_char(ch)
@@ -202,7 +204,6 @@ def update_screen(screen_num, screen, win_num, text_boxes):
         # redraw vlines
         maxy, maxx = t_boxes[0].win.getmaxyx()
         for jdx, box in enumerate(t_boxes):
-            box.win.refresh()
             if jdx < len(t_boxes) - 1:
                 screen.vline(y_len*idx+idx, (jdx+1)*maxx+jdx, '#', maxy)
     # update statusline
@@ -228,11 +229,11 @@ def update_text(screen, text_boxes):
                     box.win.scroll(1)
                     box.line_num += 1
                     box.win.move(y, 0)
-                else:
-                    box.win.move(y+1, 0)
-                    box.line_num += 1
                 for ch in line:
                     box._insert_printable_char(ord(ch))
+                box.win.move(y+1, 0)
+                box.line_num += 1
+            box.win.refresh()
     screen.refresh()
     # return nothing
     return
