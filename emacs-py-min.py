@@ -54,7 +54,7 @@ class ScrollTextbox(Textbox):
                     self.line_num -= 1
                     self.win.move(y, 0)
                     for s in self.text[self.line_num]:
-                        self._insert_printable_char(s)
+                        self._insert_printable_char(ord(s))
                     self.win.move(y, x)
             elif self.stripspaces:
                 self.win.move(y-1, self._end_of_line(y-1))
@@ -125,7 +125,7 @@ class ScrollTextbox(Textbox):
                 if self.line_num < len(self.text) - 1:
                     self.win.move(y, 0)
                     for s in self.text[self.line_num]:
-                        self._insert_printable_char(s)
+                        self._insert_printable_char(ord(s))
                     self.win.move(y, x)
                 else:
                     self.win.move(y, 0)
@@ -156,7 +156,7 @@ class ScrollTextbox(Textbox):
                 self.line_num -= 1
                 self.win.move(y, 0)
                 for s in self.text[self.line_num]:
-                    self._insert_printable_char(s)
+                    self._insert_printable_char(ord(s))
                 self.win.move(y, x)
         # return one
         return 1
@@ -202,33 +202,37 @@ def update_screen(screen_num, screen, win_num, text_boxes):
                 screen.vline(y_len*idx+idx, (jdx+1)*maxx+jdx, '#', maxy)
     # update statusline
     update_statusline(screen_num, screen, win_num, len_win_rows, "")
-    #curses.doupdate()
+    # redisplay text
+    update_text(screen, text_boxes)
     # return nothing
     return
 
 # redisplay text boxes text
-def update_text(text_boxes):
+def update_text(screen, text_boxes):
     # clear windows of text
     for idx, boxes in text_boxes.items():
         for box in boxes:
             box.win.clear()
     # get text_boxes
-    for win_row, text_box_row in text_boxes.items():
-        for win_col, text_box in enumerate(text_box_row):
+    for win_row, t_boxes in text_boxes.items():
+        for box in t_boxes:
             # move to beginning of window
-            text_box.win.move(0, 0)
+            box.win.move(0, 0)
             # display text
-            text_box.line_num = len(text_box.text) - 1
-            maxy, maxx = text_box.win.getmaxyx()
-            for line in text_box.text:
-                y, x = text_box.win.getyx()
-                for ch in line:
-                    text_box._insert_printable_char(ch)
+            box.line_num = -1
+            maxy, maxx = box.win.getmaxyx()
+            for line in box.text:
+                y, x = box.win.getyx()
                 if y == maxy-1:
-                    text_box.win.scroll(1)
-                    text_box.win.move(y, 0)
+                    box.win.scroll(1)
+                    box.line_num += 1
+                    box.win.move(y, 0)
                 else:
-                    text_box.win.move(y+1, 0)
+                    box.win.move(y+1, 0)
+                    box.line_num += 1
+                for ch in line:
+                    box._insert_printable_char(ord(ch))
+    screen.refresh()
     # return nothing
     return
 
@@ -283,9 +287,9 @@ def vsplit_win(screen_num, screen, win_num, text_boxes):
         box.win.mvwin(y, idx*new_x_len+idx)
         box.win.refresh()
     win = screen.subwin(maxy0, new_x_len-1, boxes[0].win.getparyx()[0], len_win_cols*new_x_len+len_win_cols)
-    # update screen
     text_box = ScrollTextbox(win)
     text_boxes[screen_num][win_num[0]].append(text_box)
+    # update screen
     update_screen(screen_num, screen, win_num, text_boxes[screen_num])
     # return nothing
     return
@@ -447,7 +451,6 @@ def main(stdscr):
             if len_wins < 2:
                 win_num = [len_wins, 0]
                 split_win(screen_num, screen, win_num, text_boxes)
-                update_text(text_boxes[screen_num])
             # edit default text box
             text_box = text_boxes[screen_num][win_num[0]][win_num[1]]
             text_box.line_num = len(text_box.text) - 1
@@ -465,7 +468,6 @@ def main(stdscr):
             if len_wins < 2:
                 win_num = [win_num[0], len_wins]
                 vsplit_win(screen_num, screen, win_num, text_boxes)
-                update_text(text_boxes[screen_num])
             # edit default text box
             text_box = text_boxes[screen_num][win_num[0]][win_num[1]]
             text_box.line_num = len(text_box.text) - 1
@@ -481,7 +483,6 @@ def main(stdscr):
             # remove screen if more than one exists
             if len(screens) > 1:
                 screen_num = remove_screen(screen_num, screens, cmdlines, cmds, text_boxes)
-                update_text(text_boxes[screen_num])
                 win_num = [0, 0]
                 # edit text box
                 text_box = text_boxes[screen_num][win_num[0]][win_num[1]]
@@ -498,7 +499,6 @@ def main(stdscr):
         elif c == 'rw' or c == 'remove win' or c == 'remove window':
             if len(t_boxes) > 1:
                 remove_win(screen_num, screen, text_boxes)
-                update_text(text_boxes[screen_num])
                 win_num = [0, 0]
             # edit default text box
             text_box = text_boxes[screen_num][win_num[0]][win_num[1]]
@@ -522,7 +522,6 @@ def main(stdscr):
             win_num = [0, 0]
             # update screen
             update_screen(screen_num, screen, win_num, text_boxes[screen_num])
-            update_text(text_boxes[screen_num])
             # edit default text box
             text_box = text_boxes[screen_num][win_num[0]][win_num[1]]
             text_box.line_num = len(text_box.text) - 1
