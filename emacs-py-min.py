@@ -218,16 +218,23 @@ def update_text(windows, text_boxes):
             # move to beginning of window
             windows[win_row][win_col].move(0, 0)
             # display text
+            text_box.line_num = len(text_box.text) - 1
+            maxy, maxx = text_box.win.getmaxyx()
             for line in text_box.text:
+                y, x = text_box.win.getyx()
                 for ch in line:
                     text_box._insert_printable_char(ch)
+                if y == maxy-1:
+                    text_box.win.scroll(1)
+                    text_box.win.move(y, 0)
+                else:
+                    text_box.win.move(y+1, 0)
     # refresh windows
     for idx, wins in windows.items():
         for w in wins:
             w.refresh()
     # return nothing
     return
-
 
 
 # horizontally split windows on current screen to have +1 rows
@@ -487,6 +494,7 @@ def main(stdscr):
             update_screen(screen_num, screen, win_num, wins)
             update_text(windows[screen_num], text_boxes[screen_num])
             # edit default text box
+            text_boxes[screen_num][win_num[0]][win_num[1]].win.move(0, 0)
             text_boxes[screen_num][win_num[0]][win_num[1]].edit()
 
         # next window
@@ -501,6 +509,7 @@ def main(stdscr):
             # update statusline
             update_statusline(screen_num, screen, win_num, len(wins), "")
             # edit correct text box
+            text_boxes[screen_num][win_num[0]][win_num[1]].win.move(0,0)
             text_boxes[screen_num][win_num[0]][win_num[1]].edit()
 
         # save to file
