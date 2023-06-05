@@ -234,12 +234,14 @@ def update_text(screen, text_boxes):
                 box.win.move(y+1, 0)
                 box.line_num += 1
             box.win.refresh()
+            box.win.move(0, 0)
     screen.refresh()
     # return nothing
     return
 
 # edit default text box
 def edit_default_text_box(text_box):
+    text_box.win.move(0, 0)
     text_box.do_command(curses.KEY_UP)
     return text_box.edit()
 
@@ -388,35 +390,21 @@ def main(stdscr):
     screen_num = 0
     win_num = [0, 0]
 
-    # inital text box (Ctrl-g to exit the text box)
-    create_screen(screens, cmdlines, cmds, text_boxes)
-    text_boxes[screen_num][win_num[0]][win_num[1]].edit()
+    # inital screen and text box (Ctrl-g to exit the text box)
+    #create_screen(screens, cmdlines, cmds, text_boxes)
+    #text_boxes[screen_num][win_num[0]][win_num[1]].edit()
+    c = 'new screen'
 
     # run the program
-    c = get_cmd(cmdlines[screen_num], cmds[screen_num])
-    # check for unsaved work before quitting
-    if len(c) < 1:
-        flag = False
-        for idx, t_boxes in text_boxes[0].items():
-            for box in t_boxes:
-                if len(box.text) > 1:
-                    flag = True
-        if flag:
-            update_statusline(screen_num, screens[screen_num], win_num, len(text_boxes[screen_num]), 'Possibly Unsaved Work. Quit Anyways? [y/N] ')
-            c = get_cmd(cmdlines[screen_num], cmds[screen_num])
-            if 'y' in c:
-                # end program
-                curses.endwin()
-                return
-            else:
-                c = 'e'
-    while c != '':
+    while c != 'q' or c != 'quit' or c != 'exit':
         # get info
-        screen = screens[screen_num]
-        #wins = windows[screen_num]
-        cmdline = cmdlines[screen_num]
-        cmd = cmds[screen_num]
-        t_boxes = text_boxes[screen_num]
+        try:
+            screen = screens[screen_num]
+            cmdline = cmdlines[screen_num]
+            cmd = cmds[screen_num]
+            t_boxes = text_boxes[screen_num]
+        except:
+            pass
 
         # edit window number #[,#]
         if c == 'e' or c == 'edit':
@@ -492,7 +480,6 @@ def main(stdscr):
             else:
                 screen_num = 0
             screen = screens[screen_num]
-            #wins = windows[screen_num]
             # reset window numbers
             win_num = [0, 0]
             # update screen
@@ -579,9 +566,11 @@ def main(stdscr):
                 update_statusline(screen_num, screen, win_num, len(t_boxes), 'Possibly Unsaved Work. Quit Anyways? [y/N] ')
                 c = get_cmd(cmdlines[screen_num], cmds[screen_num])
                 if 'y' in c:
-                    break
+                    # end program
+                    curses.endwin()
+                    return
                 else:
-                    continue
+                    c = 'e'
 
 
     # end program
