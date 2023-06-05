@@ -206,33 +206,48 @@ def update_screen(screen_num, screen, win_num, text_boxes):
         for jdx, box in enumerate(t_boxes):
             if jdx < len(t_boxes) - 1:
                 screen.vline(y_len*idx+idx, (jdx+1)*maxx+jdx, '#', maxy)
+    # redisplay text
+    #update_text(screen, text_boxes)
     # update statusline
     update_statusline(screen_num, screen, win_num, len_win_rows, "")
-    # redisplay text
-    update_text(screen, text_boxes)
     # return nothing
     return
 
 # redisplay text boxes text
 def update_text(screen, text_boxes):
+    # on the fly function
+    def scroll_a_line(box):
+        if y == maxy-1:
+            box.win.scroll(1)
+            box.line_num += 1
+            box.win.move(y, 0)
+        else:
+            box.win.move(y+1, 0)
+            box.line_num += 1
+
+    # clear out text box
+    for win_row, t_boxes in text_boxes.items():
+        for box in t_boxes:
+            box.win.erase()
     # get text_boxes
     for win_row, t_boxes in text_boxes.items():
         for box in t_boxes:
             # move to beginning of window
             box.win.move(0, 0)
-            # display text
             box.line_num = 0
+            # display text
             maxy, maxx = box.win.getmaxyx()
             for line in box.text:
                 y, x = box.win.getyx()
-                if y == maxy-1:
-                    box.win.scroll(1)
-                    box.line_num += 1
-                    box.win.move(y, 0)
-                for ch in line:
-                    box._insert_printable_char(ord(ch))
-                box.win.move(y+1, 0)
-                box.line_num += 1
+                for ch in line[:maxx]:
+                    box.win.insstr(ch)
+                    box.win.move(y, x+1)
+                scroll_a_line(box)
+                if len(line[:maxx]) < len(line):
+                    for ch in line[maxx:]:
+                        box.win.insstr(ch)
+                        box.win.move(y, x+1)
+                    scroll_a_line(box)
             box.win.refresh()
             box.win.move(0, 0)
     screen.refresh()
@@ -242,7 +257,6 @@ def update_text(screen, text_boxes):
 # edit default text box
 def edit_default_text_box(text_box):
     text_box.win.move(0, 0)
-    text_box.do_command(curses.KEY_UP)
     return text_box.edit()
 
 # horizontally split windows on current screen to have +1 rows
@@ -517,17 +531,20 @@ def main(stdscr):
                 with open(c, 'w') as filename:
                     result = ""
                     for line in text_to_save:
-                        result += line
+                        if line[-1] == '\n':
+                            result += line
+                        else:
+                            result += line + '\n'
                     filename.write(result)
                 # update statusline if successful
                 update_statusline(screen_num, screen, win_num, len(t_boxes), 'Save Successful')
                 # update statusline
                 sleep(1)
                 update_statusline(screen_num, screen, win_num, len(t_boxes), "")
-                # edit default text box with updated statusline
-                text_boxes[screen_num][win_num[0]][win_num[1]].edit()
             except: # update statusline if failed
                 update_statusline(screen_num, screen, win_num, len(t_boxes), 'Error: File Save Failed')
+            # edit default text box with updated statusline
+            edit_default_text_box(text_boxes[screen_num][win_num[0]][win_num[1]])
 
         # open file
         elif c == 'fo' or c == 'file open':
@@ -550,7 +567,8 @@ def main(stdscr):
             except: # update statusline if failed
                 update_statusline(screen_num, screen, win_num, len(t_boxes), 'Error: File Open Failed')
             # edit default text box
-            text_box.edit()
+            edit_default_text_box(text_box)
+
 
         # get cmd from cmdline
         c = get_cmd(cmdlines[screen_num], cmds[screen_num])
