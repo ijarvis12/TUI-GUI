@@ -457,7 +457,6 @@ def main(stdscr):
         elif c == 'r' or c == 'remove' or c == 'remove screen':
             # remove screen if more than one exists
             if len(screens) > 1:
-                del text_boxes_text[screen_num]
                 screen_num = remove_screen(screen_num, screens, cmdlines, cmds, windows, text_boxes)
                 update_text(windows[screen_num], text_boxes[screen_num])
                 win_num = [0, 0]
@@ -469,7 +468,6 @@ def main(stdscr):
         elif c == 'rw' or c == 'remove win' or c == 'remove window':
             if len(wins) > 1:
                 remove_win(screen_num, screen, wins, text_boxes)
-                del text_boxes_text[screen_num][len(wins)]
                 update_text(windows[screen_num], text_boxes[screen_num])
                 win_num = [0, 0]
             text_boxes[screen_num][win_num[0]][win_num[1]].edit()
