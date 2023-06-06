@@ -39,7 +39,9 @@ class ScrollTextbox(Textbox):
                     else:
                         self.text[self.line_num] = " " * x
                 elif x > len(self.text[self.line_num]):
+                        self.text[self.line_num].lstrip('\n')
                         self.text[self.line_num] += " " * (x - len(self.text[self.line_num]))
+                self.text[self.line_num].rstrip('\n')
                 self.text[self.line_num] += chr(ch)
             elif y == self.maxy:
                 self.text[self.line_num] += "\n"
@@ -47,7 +49,10 @@ class ScrollTextbox(Textbox):
                 self.line_num += 1
                 self.win.move(y, 0)
                 self._insert_printable_char(ch)
-                self.text.append(chr(ch))
+                if self.line_num > len(self.text) - 1:
+                    self.text.append(chr(ch))
+                else:
+                    self.text[self.line_num] = chr(ch) + self.text[self.line_num]
         # Ctrl-a (Go to left edge of window)
         elif ch == curses.ascii.SOH:                           # ^a
             self.win.move(y, 0)
@@ -89,6 +94,8 @@ class ScrollTextbox(Textbox):
                 self.win.scroll(1)
                 self.line_num += 1
                 self.win.move(y, 0)
+                if self.line_num < len(self.text) - 1:
+                    self.win.insstr(self.text[self.line_num])
             else:
                 self.win.move(y+1, 0)
                 self.line_num += 1
@@ -96,12 +103,11 @@ class ScrollTextbox(Textbox):
                 self.text.append("\n")
         # Ctrl-g (Terminate, returning the window contents)
         elif ch == curses.ascii.BEL:                           # ^g
-            return 0
+            return 0           # return zero
         # Ctrl-j (Terminate if the window is 1 line, otherwise insert newline)
         elif ch == curses.ascii.NL:                            # ^j
             if self.maxy == 0:
-                # return zero
-                return 0
+                return 0       # return zero
             elif y < self.maxy:
                 self.win.move(y+1, 0)
                 self.line_num += 1
@@ -109,6 +115,8 @@ class ScrollTextbox(Textbox):
                 self.win.scroll(1)
                 self.line_num += 1
                 self.win.move(y, 0)
+                if self.line_num < len(self.text) - 1:
+                    self.win.insstr(self.text[self.line_num])
             if self.line_num > len(self.text) - 1:
                 self.text.append("\n")
         # Ctrl-k (If line is blank, delete it, otherwise clear to end of line)
@@ -146,7 +154,7 @@ class ScrollTextbox(Textbox):
         elif ch == curses.ascii.SI:                            # ^o
             self.win.insertln()
             if self.line_num > 0:
-                self.text = self.text[self.line_num-1:self.line_num] + ["\n"] + self.text[self.line_num:]
+                self.text = self.text[0:self.line_num] + ["\n"] + self.text[self.line_num:]
             else:
                 self.text = ["\n"] + self.text
         # Ctrl-p (Cursor up, move up one line)
@@ -231,18 +239,25 @@ def update_text(screen, text_boxes):
         for box in t_boxes:
             # move to beginning of window
             box.win.move(0, 0)
-            box.line_num = 0
             # display text
             maxy, maxx = box.win.getmaxyx()
-            for line in box.text:
+            box.line_num -= 5
+            if box.line_num < 0:
+                box.line_num = 0
+            for line in box.text[box.line_num:]:
                 y, x = box.win.getyx()
+                if y == maxy:
+                    box.win.move(0, 0)
+                    box.line_num -= y
+                    break
                 while line != "":
                     for ch in line[:maxx]:
                         box.win.insstr(ch)
                         box.win.move(y, x+1)
                     scroll_a_line(box)
                     line = line[maxx:]
-                box.line_num += 1
+                if box.line_num < len(box.text) - 2:
+                    box.line_num += 1
             box.win.refresh()
     screen.refresh()
     # return nothing
