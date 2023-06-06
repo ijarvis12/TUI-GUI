@@ -60,8 +60,7 @@ class ScrollTextbox(Textbox):
                     self.win.scroll(-1)
                     self.line_num -= 1
                     self.win.move(y, 0)
-                    for s in self.text[self.line_num]:
-                        self._insert_printable_char(ord(s))
+                    self.win.insstr(self.text[self.line_num])
                     self.win.move(y, x)
             elif self.stripspaces:
                 self.win.move(y-1, self._end_of_line(y-1))
@@ -131,8 +130,7 @@ class ScrollTextbox(Textbox):
                 self.line_num += 1
                 if self.line_num < len(self.text) - 1:
                     self.win.move(y, 0)
-                    for s in self.text[self.line_num]:
-                        self._insert_printable_char(ord(s))
+                    self.win.insstr(self.text[self.line_num])
                     self.win.move(y, x)
                 else:
                     self.win.move(y, 0)
@@ -162,8 +160,7 @@ class ScrollTextbox(Textbox):
                 self.win.scroll(-1)
                 self.line_num -= 1
                 self.win.move(y, 0)
-                for s in self.text[self.line_num]:
-                    self._insert_printable_char(ord(s))
+                self.win.insstr(self.text[self.line_num])
                 self.win.move(y, x)
         # return one
         return 1
@@ -207,24 +204,24 @@ def update_screen(screen_num, screen, win_num, text_boxes):
             if jdx < len(t_boxes) - 1:
                 screen.vline(y_len*idx+idx, (jdx+1)*maxx+jdx, '#', maxy)
     # redisplay text
-    #update_text(screen, text_boxes)
+    update_text(screen, text_boxes)
     # update statusline
     update_statusline(screen_num, screen, win_num, len_win_rows, "")
     # return nothing
     return
 
+# function for update_text
+def scroll_a_line(box):
+    y, x = box.win.getyx()
+    maxy, maxx = box.win.getmaxyx()
+    if y == maxy-1:
+        box.win.scroll(1)
+        box.win.move(y, 0)
+    else:
+        box.win.move(y+1, 0)
+
 # redisplay text boxes text
 def update_text(screen, text_boxes):
-    # on the fly function
-    def scroll_a_line(box):
-        if y == maxy-1:
-            box.win.scroll(1)
-            box.line_num += 1
-            box.win.move(y, 0)
-        else:
-            box.win.move(y+1, 0)
-            box.line_num += 1
-
     # clear out text box
     for win_row, t_boxes in text_boxes.items():
         for box in t_boxes:
@@ -239,24 +236,20 @@ def update_text(screen, text_boxes):
             maxy, maxx = box.win.getmaxyx()
             for line in box.text:
                 y, x = box.win.getyx()
-                for ch in line[:maxx]:
-                    box.win.insstr(ch)
-                    box.win.move(y, x+1)
-                scroll_a_line(box)
-                if len(line[:maxx]) < len(line):
-                    for ch in line[maxx:]:
+                while line != "":
+                    for ch in line[:maxx]:
                         box.win.insstr(ch)
                         box.win.move(y, x+1)
                     scroll_a_line(box)
+                    line = line[maxx:]
+                box.line_num += 1
             box.win.refresh()
-            box.win.move(0, 0)
     screen.refresh()
     # return nothing
     return
 
 # edit default text box
 def edit_default_text_box(text_box):
-    text_box.win.move(0, 0)
     return text_box.edit()
 
 # horizontally split windows on current screen to have +1 rows
@@ -510,6 +503,8 @@ def main(stdscr):
                 win_num = [win_num[0]+1, 0]
             else:
                 win_num = [0, 0]
+            # update text
+            update_text(screen, t_boxes)
             # update statusline
             update_statusline(screen_num, screen, win_num, len(t_boxes), "")
             # edit correct text box
@@ -539,7 +534,7 @@ def main(stdscr):
                 # update statusline if successful
                 update_statusline(screen_num, screen, win_num, len(t_boxes), 'Save Successful')
                 # update statusline
-                sleep(1)
+                sleep(.1)
                 update_statusline(screen_num, screen, win_num, len(t_boxes), "")
             except: # update statusline if failed
                 update_statusline(screen_num, screen, win_num, len(t_boxes), 'Error: File Save Failed')
