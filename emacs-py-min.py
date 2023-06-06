@@ -451,7 +451,8 @@ def main(stdscr):
             screen_num = len(screens)
             create_screen(screens, cmdlines, cmds, text_boxes)
             win_num = [0, 0]
-            text_boxes[screen_num][win_num[0]][win_num[1]].edit()
+            # edit default text box
+            edit_default_text_box(text_boxes[screen_num][win_num[0]][win_num[1]])
 
         # new window
         elif c == 'nw' or c =='new win' or c == 'new window':
