@@ -303,8 +303,6 @@ def main(stdscr):
     screen_num = 0
 
     # inital screen and text box (Ctrl-g to exit the text box)
-    #create_screen(screens, cmdlines, cmds, text_boxes)
-    #text_boxes[screen_num][win_num[0]][win_num[1]].edit()
     c = 'new screen'
 
     # run the program
