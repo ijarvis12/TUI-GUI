@@ -237,7 +237,7 @@ def update_text(screen, t_box):
                 t_box.win.move(y, x+1)
             scroll_a_line(t_box)
             line = line[maxx:]
-            if t_box.line_num < len(box.text) - 1:
+            if t_box.line_num < len(t_box.text) - 1:
                 t_box.line_num += 1
     t_box.win.refresh()
     screen.refresh()
