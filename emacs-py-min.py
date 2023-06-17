@@ -414,6 +414,7 @@ def main(stdscr):
             for box in text_boxes:
                 if len(box.text) > 1:
                     flag = True
+                    break
             if flag:
                 update_statusline(screen_num, screen, 'Possibly Unsaved Work. Quit Anyways? [y/N] ')
                 c = get_cmd(cmdlines[screen_num], cmds[screen_num])
