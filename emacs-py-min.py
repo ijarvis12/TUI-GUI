@@ -263,7 +263,6 @@ def create_screen(screens, cmdlines, cmds, text_boxes):
 
     # setup window
     win = screen.subwin(maxy-2, maxx, 0, 0)
-    #windows.append({0:[win]})
     text_box = ScrollTextbox(win)
     text_boxes.append(text_box)
 
@@ -299,22 +298,20 @@ def main(stdscr):
     cmds = []
     text_boxes = []
 
-    # index vars
-    screen_num = 0
-
     # inital screen and text box (Ctrl-g to exit the text box)
-    c = 'new screen'
+    screen_num = len(screens)
+    create_screen(screens, cmdlines, cmds, text_boxes)
+    # edit default text box
+    edit_default_text_box(text_boxes[screen_num])
 
     # run the program
+    c = ''
     while c != 'q' or c != 'quit' or c != 'exit':
         # get info
-        try:
-            screen = screens[screen_num]
-            cmdline = cmdlines[screen_num]
-            cmd = cmds[screen_num]
-            t_box = text_boxes[screen_num]
-        except:
-            pass
+        screen = screens[screen_num]
+        cmdline = cmdlines[screen_num]
+        cmd = cmds[screen_num]
+        t_box = text_boxes[screen_num]
 
         # edit text obx
         if c == 'e' or c == 'edit':
@@ -414,9 +411,8 @@ def main(stdscr):
             for box in text_boxes:
                 if len(box.text) > 1:
                     flag = True
-                    break
             if flag:
-                update_statusline(screen_num, screen, 'Possibly Unsaved Work. Quit Anyways? [y/N] ')
+                update_statusline(screen_num, screen, 'Possibly Unsaved Work. Quit Anyways? [y/N]')
                 c = get_cmd(cmdlines[screen_num], cmds[screen_num])
                 if 'y' in c:
                     # end program
@@ -424,6 +420,9 @@ def main(stdscr):
                     return
                 else:
                     c = 'e'
+            else:
+                curses.endwin()
+                return
 
 
     # end program
