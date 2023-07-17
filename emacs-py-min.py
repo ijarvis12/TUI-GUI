@@ -61,7 +61,7 @@ class ScrollTextbox(Textbox):
                     self.top_line_num -= 1
                     self.win.move(y, 0)
                     self.win.insstr(self.text[self.line_num])
-                    self.win.move(y, x)
+                    self.win.move(y, len(self.text[self.line_num]))
             elif self.stripspaces:
                 self.win.move(y-1, self._end_of_line(y-1))
                 self.line_num -= 1
@@ -105,7 +105,8 @@ class ScrollTextbox(Textbox):
             if self.maxy == 0:
                 return 0       # return zero
             elif y < self.maxy:
-                self.win.move(y+1, 0)
+                self.win.insertln()
+                self.win.move(y, 0)
                 self.text = self.text[:self.line_num] + ['\n'] + self.text[self.line_num:]
                 self.line_num += 1
             if self.line_num > len(self.text) - 1:
