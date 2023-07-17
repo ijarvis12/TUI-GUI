@@ -44,8 +44,8 @@ class Window(TextLog):
         old_y = self.y
         new_x = event.screen_x
         new_y = event.screen_y
-        cmp_x = new_x > self.x
-        cmp_y = new_y > self.y
+        cmp_x = new_x > old_x
+        cmp_y = new_y > old_y
         self.styles.offset = ((cmp_x * new_x + cmp_x * old_x + (not cmp_x) * old_x - (not cmp_x) * new_x) // 2,
                               (cmp_y * new_y + cmp_y * old_y + (not cmp_y) * old_y - (not cmp_y) * new_y) // 2,)
         self.focus()
