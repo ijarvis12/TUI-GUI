@@ -30,14 +30,23 @@ class ScrollTextbox(Textbox):
                 self.text.append('\n')
         # print character
         if curses.ascii.isprint(ch):
-            if y < self.maxy or x < self.maxx:
+            if self.text[self.line_num] == '\n' and x != 0:
+                self.text[self.line_num] = " " * x
+            elif x > len(self.text[self.line_num]):
+                self.text[self.line_num] += " " * (x - len(self.text[self.line_num]))
+                self.text[self.line_num].rstrip('\n')
+            self.text[self.line_num] += chr(ch)
+            if x == self.maxx:
+                if y == self.maxy:
+                    self.win.scroll(1)
+                    self.top_line_num += 1
+                    self.win.move(y-1, x)
                 self._insert_printable_char(ch)
-                if self.text[self.line_num] == '\n' and x != 0:
-                    self.text[self.line_num] = " " * x
-                elif x > len(self.text[self.line_num]):
-                    self.text[self.line_num] += " " * (x - len(self.text[self.line_num]))
-                    self.text[self.line_num].rstrip('\n')
-                self.text[self.line_num] += chr(ch)
+                self.line_num += 1
+                if self.line_num < len(self.text):
+                    self.win.insstr(self.text[self.line_num])
+            else:
+                self._insert_printable_char(ch)
         # Ctrl-a (Go to left edge of window)
         elif ch == curses.ascii.SOH:                           # ^a
             self.win.move(y, 0)
