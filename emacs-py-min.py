@@ -405,8 +405,6 @@ def main(stdscr):
 
         # save to file
         elif c == 'fs' or c == 'file save' or c == 'file save as':
-            # get text box text to save
-            text_to_save = t_box.text
             # update statusline
             update_statusline(screen_num, screen, 'Filename To Save As: ')
             # get filename
@@ -418,7 +416,7 @@ def main(stdscr):
                 # save file
                 with open(c, 'w') as filename:
                     result = ""
-                    for line in text_to_save:
+                    for line in t_box.text:
                         if line[-1] == '\n':
                             result += line
                         else:
@@ -426,8 +424,8 @@ def main(stdscr):
                     filename.write(result)
                 # update statusline if successful
                 update_statusline(screen_num, screen, 'Save Successful')
-                # update statusline
                 sleep(.1)
+                # update statusline
                 update_statusline(screen_num, screen, "")
             except: # update statusline if failed
                 update_statusline(screen_num, screen, 'Error: File Save Failed')
