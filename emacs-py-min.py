@@ -396,24 +396,25 @@ def main(stdscr):
         # remove screen
         elif c == 'r' or c == 'remove' or c == 'remove screen':
             # if text box has text, ask
-            if len(t_box) > 1:
-                if len(screens) > 1:
-                    update_statusline(screen_num, screen, 'Possibly unsaved work. Remove screen buffer [y/N]?')
-                else:
-                    # else only one screen buffer
-                    update_statusline(screen_num, screen, 'Possibly unsaved work. Quit [y/N]?')
-                # get user's choice
-                c = get_cmd(cmdlines[screen_num], cmds[screen_num])
-                # if user entered yes, and more than one screen buffer, remove current screen buffer
-                if 'y' in c and len(screens) > 1:
-                    screen_num = remove_screen(screen_num, screens, cmdlines, cmds, text_boxes)
-                # else if user entered yes, and only one screen buffer, quit
-                elif 'y' in c:
-                    break
-                else:
+            for tbox in text_boxes:
+                if len(tbox) > 1:
+                    if len(screens) > 1:
+                        update_statusline(screen_num, screen, 'Possibly unsaved work. Remove screen buffer [y/N]?')
+                    else:
+                        # else only one screen buffer
+                        update_statusline(screen_num, screen, 'Possibly unsaved work. Quit [y/N]?')
+                    # get user's choice
+                    c = get_cmd(cmdlines[screen_num], cmds[screen_num])
+                    # if user entered yes, and more than one screen buffer, remove current screen buffer
+                    if 'y' in c and len(screens) > 1:
+                        screen_num = remove_screen(screen_num, screens, cmdlines, cmds, text_boxes)
+                    # else if user entered yes, and only one screen buffer, quit
+                    elif 'y' in c:
+                        break
                     # else user entered no, edit text box
-                    edit_default_text_box(t_box)
-            else: # else end program
+                    edit_default_text_box(text_boxes[screen_num])
+                    break
+            else: # (for) else, end program
                 break
 
         # next screen
