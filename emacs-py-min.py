@@ -174,13 +174,13 @@ class ScrollTextbox(Textbox):
         return 1
 
 
-# get command from commandline
 def get_cmd(cmdline, cmd):
+    "Get a command from commandline"
     cmdline.clear()
     return cmd.edit().strip(' ').lower()
 
-# update statusline
 def update_statusline(screen_num, screen, status):
+    "Update the statusline"
     s_maxy, s_maxx = screen.getmaxyx()
     # statuline string
     if len(status) > 0:
@@ -194,8 +194,8 @@ def update_statusline(screen_num, screen, status):
     # return nothing
     return
 
-# redraw screen hlines, vlines
 def update_screen(screen_num, screen, t_box):
+    "Redraw the screen"
     screen.clear()
     # redisplay text
     update_text(screen, t_box)
@@ -204,8 +204,8 @@ def update_screen(screen_num, screen, t_box):
     # return nothing
     return
 
-# function for update_text
 def scroll_a_line(box):
+    "Function for update_text, scrolls one line"
     y, x = box.win.getyx()
     maxy, maxx = box.win.getmaxyx()
     if y == maxy-1:
@@ -214,8 +214,8 @@ def scroll_a_line(box):
     else:
         box.win.move(y+1, 0)
 
-# redisplay text boxes text
 def update_text(screen, t_box):
+    "Redisplay text box text"
     # clear out text box
     t_box.win.erase()
     # get text_boxes
@@ -244,12 +244,12 @@ def update_text(screen, t_box):
     # return nothing
     return
 
-# edit default text box
 def edit_default_text_box(text_box):
+    "Edit default text box"
     return text_box.edit()
 
-# create new screen for editing to have +1 screens
 def create_screen(screens, cmdlines, cmds, text_boxes):
+    "Create new screen for editing to have +1 screens"
     # setup screen
     screens.append(curses.initscr())
     screen = screens[-1]
@@ -272,8 +272,8 @@ def create_screen(screens, cmdlines, cmds, text_boxes):
     # return nothing
     return
 
-# remove current screen to have -1 screens
 def remove_screen(screen_num, screens, cmdlines, cmds, text_boxes):
+    "Remove current screen to have -1 screens"
     # remove screen and associated objects
     del text_boxes[screen_num]
     del cmds[screen_num]
@@ -289,8 +289,8 @@ def remove_screen(screen_num, screens, cmdlines, cmds, text_boxes):
     # return screen number
     return screen_num
 
-# main program loop
 def main(stdscr):
+    "Main program loop"
     # screen setup
     stdscr.clear()
     screens = []
@@ -412,15 +412,18 @@ def main(stdscr):
                 if len(box.text) > 1:
                     flag = True
             if flag:
+                # if text in text boxes, ask if really want to quit
                 update_statusline(screen_num, screen, 'Possibly Unsaved Work. Quit Anyways? [y/N]')
                 c = get_cmd(cmdlines[screen_num], cmds[screen_num])
                 if 'y' in c:
-                    # end program
+                    # if user entered y, end program
                     curses.endwin()
                     return
                 else:
+                    # else user entered no, edit text box
                     c = 'e'
             else:
+                # else if no text in text boxes, end program
                 curses.endwin()
                 return
 
