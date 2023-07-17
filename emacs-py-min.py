@@ -108,7 +108,6 @@ class ScrollTextbox(Textbox):
                 self.win.insertln()
                 self.win.move(y, 0)
                 self.text = self.text[:self.line_num] + ['\n'] + self.text[self.line_num:]
-                self.line_num += 1
             if self.line_num > len(self.text) - 1:
                 self.text.append("\n")
         # Ctrl-k (If line is blank, delete it, otherwise clear to end of line)
