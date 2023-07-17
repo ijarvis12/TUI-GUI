@@ -205,7 +205,7 @@ def update_screen(screen_num, screen, t_box):
     return
 
 def scroll_a_line(box):
-    "Function for update_text, scrolls one line"
+    "Function for update_text, and misc buffers; scrolls one line"
     y, x = box.win.getyx()
     maxy, maxx = box.win.getmaxyx()
     if y == maxy-1:
@@ -301,6 +301,7 @@ def main(stdscr):
     # inital screen and text box (Ctrl-g to exit the text box)
     screen_num = len(screens)
     create_screen(screens, cmdlines, cmds, text_boxes)
+    update_statusline(screen_num, screens[screen_num], "Help screen: 'Ctrl-G'+'h'+<Enter>")
     # edit default text box
     edit_default_text_box(text_boxes[screen_num])
 
@@ -313,8 +314,75 @@ def main(stdscr):
         cmd = cmds[screen_num]
         t_box = text_boxes[screen_num]
 
-        # edit text obx
-        if c == 'e' or c == 'edit':
+        # help buffer display
+        if c == 'h' or c == 'help':
+            create_screen(screens, cmdlines, cmds, text_boxes)
+            t_box = text_boxes[-1]
+            t_box.text = [
+"              Help Page              ",
+"-------------------------------------",
+"====  Text Box Commands  ====",
+"Ctrl-A = Go to left edge of window",
+"Ctrl-B = Cursor left, wrapping to previous line if appropriate",
+"Ctrl-D = Delete character under cursor",
+"Ctrl-E = Go to end of line",
+"Ctrl-F = Cursor right, wrapping to next line when appropriate",
+"---- Ctrl-G = Go to command line, else if in command line exit ----",
+"Ctrl-H = Delete character backward",
+"Ctrl-J = Insert newline",
+"Ctrl-K = If line is blank, delete it, otherwise clear to end of line",
+"Ctrl-L = Refresh text box",
+"Ctrl-N = Cursor down; move down one line",
+"Ctrl-O = Insert a blank line at cursor location",
+"Ctrl-P = Cursor up; move up one line",
+"---------------------------------",
+"====  Command Line Commands  ====",
+"'h[elp]' = display help page",
+"'e[dit]' = edit text box",
+"'n[ew[ screen]]' = new screen buffer",
+"'r[emove[ screen]]' = remove current screen buffer",
+"'s[creen]' = go to next screen buffer",
+"'f[ile ]s[ave[ as]]' = save to file",
+"'f[ile ]o[pen]' = open file",
+"'b[uffer]' = list open screen buffers in new screen buffer"
+]
+            for l,line in enumerate(t_box.text):
+                for ch in line:
+                    t_box.do_command(ord(ch))
+                if l == len(t_box.text) - 1:
+                    break
+                else:
+                    scroll_a_line(t_box)
+            edit_default_text_box(t_box)
+
+
+        # open buffer screen
+        elif c == 'b' or c == 'buffer':
+            create_screen(screens, cmdlines, cmds, text_boxes)
+            t_box = text_boxes[-1]
+            t_box.text = [
+"=========  Open Screen Buffers  =========",
+"Warning: This buffer will not auto update",
+"Recommended to remove when done"
+]
+            for s,scrn in enumerate(screens):
+                if s == len(screens) - 1:
+                    t_box.text.append("* Screen "+str(s)+" * (Buffer Window)")
+                else:
+                    t_box.text.append("  Screen "+str(s))
+            for l,line in enumerate(t_box.text):
+                for ch in line:
+                    t_box.do_command(ord(ch))
+                if l == len(t_box.text) - 1:
+                    break
+                else:
+                    scroll_a_line(t_box)
+            edit_default_text_box(t_box)
+
+
+
+        # edit text box
+        elif c == 'e' or c == 'edit':
             edit_default_text_box(t_box)
 
 
@@ -327,17 +395,30 @@ def main(stdscr):
 
         # remove screen
         elif c == 'r' or c == 'remove' or c == 'remove screen':
-            # remove screen if more than one exists
-            if len(screens) > 1:
-                screen_num = remove_screen(screen_num, screens, cmdlines, cmds, text_boxes)
-                # edit text box
-                edit_default_text_box(text_boxes[screen_num])
+            # if text box has text, ask
+            if len(t_box) > 1:
+                if len(screens) > 1:
+                    update_statusline(screen_num, screen, 'Possibly unsaved work. Remove screen buffer [y/N]?')
+                else:
+                    # else only one screen buffer
+                    update_statusline(screen_num, screen, 'Possibly unsaved work. Quit [y/N]?')
+                # get user's choice
+                c = get_cmd(cmdlines[screen_num], cmds[screen_num])
+                # if user entered yes, and more than one screen buffer, remove current screen buffer
+                if 'y' in c and len(screens) > 1:
+                    screen_num = remove_screen(screen_num, screens, cmdlines, cmds, text_boxes)
+                # else if user entered yes, and only one screen buffer, quit
+                elif 'y' in c:
+                    break
+                else:
+                    # else user entered no, edit text box
+                    edit_default_text_box(t_box)
             else: # else end program
                 break
 
         # next screen
         elif c == 's' or c == 'screen':
-            #set screen number, screen, and associated windows
+            # set screen number, screen, and associated windows
             if screen_num < len(screens) - 1:
                 screen_num += 1
             else:
@@ -386,21 +467,21 @@ def main(stdscr):
             # get filename
             c = get_cmd(cmdline, cmd)
             # try to open file
-            text_box = text_boxes[screen_num]
+            t_box = text_boxes[screen_num]
             try:
                 with open(c, 'r') as filename:
                     text_to_insert = filename.readlines()
-                    text_box.win.erase()
-                    text_box.text = ['\n']
+                    t_box.win.erase()
+                    t_box.text = ['\n']
                     for textline in text_to_insert:
                         for ch in textline:
-                            text_box.do_command(ord(ch))
+                            t_box.do_command(ord(ch))
                 # update statusline
                 update_statusline(screen_num, screen, "")
             except: # update statusline if failed
                 update_statusline(screen_num, screen, 'Error: File Open Failed')
             # edit default text box
-            edit_default_text_box(text_box)
+            edit_default_text_box(t_box)
 
 
         # get cmd from cmdline
@@ -416,16 +497,13 @@ def main(stdscr):
                 update_statusline(screen_num, screen, 'Possibly Unsaved Work. Quit Anyways? [y/N]')
                 c = get_cmd(cmdlines[screen_num], cmds[screen_num])
                 if 'y' in c:
-                    # if user entered y, end program
-                    curses.endwin()
-                    return
+                    break
                 else:
                     # else user entered no, edit text box
                     c = 'e'
             else:
                 # else if no text in text boxes, end program
-                curses.endwin()
-                return
+                break
 
 
     # end program
