@@ -14,10 +14,8 @@ class ScrollTextbox(Textbox):
             self.win.idlok(True)
             self.win.scrollok(True)
             self.stripspaces = True
-            self.line_num = self.win.getyx()[0]
+            self.line_num = 0
             self.text = []
-            for i in range(self.line_num):
-                self.text.append('\n')
 
     # overwrite Textbox do_command for scrolling
     def do_command(self, ch):
@@ -33,26 +31,12 @@ class ScrollTextbox(Textbox):
         if curses.ascii.isprint(ch):
             if y < self.maxy or x < self.maxx:
                 self._insert_printable_char(ch)
-                if self.text[self.line_num] == '\n':
-                    if x == 0:
-                        self.text[self.line_num] = ""
-                    else:
-                        self.text[self.line_num] = " " * x
+                if self.text[self.line_num] == '\n' and x != 0:
+                    self.text[self.line_num] = " " * x
                 elif x > len(self.text[self.line_num]):
-                        self.text[self.line_num].lstrip('\n')
-                        self.text[self.line_num] += " " * (x - len(self.text[self.line_num]))
-                self.text[self.line_num].rstrip('\n')
+                    self.text[self.line_num] += " " * (x - len(self.text[self.line_num]))
+                    self.text[self.line_num].rstrip('\n')
                 self.text[self.line_num] += chr(ch)
-            elif y == self.maxy:
-                self.text[self.line_num] += "\n"
-                self.win.scroll(1)
-                self.line_num += 1
-                self.win.move(y, 0)
-                self._insert_printable_char(ch)
-                if self.line_num > len(self.text) - 1:
-                    self.text.append(chr(ch))
-                else:
-                    self.text[self.line_num] = chr(ch) + self.text[self.line_num]
         # Ctrl-a (Go to left edge of window)
         elif ch == curses.ascii.SOH:                           # ^a
             self.win.move(y, 0)
@@ -75,11 +59,11 @@ class ScrollTextbox(Textbox):
                 self.line_num -= 1
             if ch in (curses.ascii.BS, curses.KEY_BACKSPACE):
                 self.win.delch()
-                self.text[self.line_num] = self.text[self.line_num][0:x] + self.text[self.line_num][x+1:]
+                self.text[self.line_num] = self.text[self.line_num][:x] + self.text[self.line_num][x+1:]
         # Ctrl-d (Delete character under cursor)
         elif ch == curses.ascii.EOT:                           # ^d
             self.win.delch()
-            self.text[self.line_num] = self.text[self.line_num][0:x] + self.text[self.line_num][x+1:]
+            self.text[self.line_num] = self.text[self.line_num][:x] + self.text[self.line_num][x+1:]
         # Ctrl-e (Go to right edge (stripspaces off) or end of line (stripspaces on))
         elif ch == curses.ascii.ENQ:                           # ^e
             if self.stripspaces:
@@ -110,6 +94,7 @@ class ScrollTextbox(Textbox):
                 return 0       # return zero
             elif y < self.maxy:
                 self.win.move(y+1, 0)
+                self.text = self.text[:self.line_num] + ['\n'] + self.text[self.line_num:]
                 self.line_num += 1
             elif y == self.maxy:
                 self.win.scroll(1)
@@ -139,7 +124,7 @@ class ScrollTextbox(Textbox):
                 if self.line_num < len(self.text) - 1:
                     self.win.move(y, 0)
                     self.win.insstr(self.text[self.line_num])
-                    self.win.move(y, x)
+                    self.win.move(y, 0)
                 else:
                     self.win.move(y, 0)
                     self.text.append("\n")
@@ -148,8 +133,8 @@ class ScrollTextbox(Textbox):
                 self.line_num += 1
                 if self.line_num > len(self.text) - 1:
                     self.text.append("\n")
-            if x > self._end_of_line(y+1):
-                self.win.move(y+1, self._end_of_line(y+1))
+            if x > len(self.text[self.line_num]):
+                self.win.move(y+1, len(self.text[self.line_num]) - 1)
         # Ctrl-o (Insert a blank line at cursor location)
         elif ch == curses.ascii.SI:                            # ^o
             self.win.insertln()
@@ -162,8 +147,8 @@ class ScrollTextbox(Textbox):
             if y > 0:
                 self.win.move(y-1, x)
                 self.line_num -= 1
-                if x > self._end_of_line(y-1):
-                    self.win.move(y-1, self._end_of_line(y-1))
+                if x > len(self.text[self.line_num]) - 1:
+                    self.win.move(y-1, len(self.text[self.line_num]) - 1)
             elif self.line_num > 0:
                 self.win.scroll(-1)
                 self.line_num -= 1
@@ -177,6 +162,7 @@ class ScrollTextbox(Textbox):
 def get_cmd(cmdline, cmd):
     "Get a command from commandline"
     cmdline.clear()
+    cmdline.refresh()
     return cmd.edit().strip(' ').lower()
 
 def update_statusline(screen_num, screen, status):
@@ -194,58 +180,50 @@ def update_statusline(screen_num, screen, status):
     # return nothing
     return
 
-def update_screen(screen_num, screen, t_box):
+def update_screen(screen_num, screen, text_box):
     "Redraw the screen"
     screen.clear()
     # redisplay text
-    update_text(screen, t_box)
+    update_text(text_box)
     # update statusline
     update_statusline(screen_num, screen, "")
     # return nothing
     return
 
-def scroll_a_line(box):
-    "Function for update_text, and misc buffers; scrolls one line"
-    y, x = box.win.getyx()
-    maxy, maxx = box.win.getmaxyx()
-    if y == maxy-1:
-        box.win.scroll(1)
-        box.win.move(y, 0)
-    else:
-        box.win.move(y+1, 0)
-
-def update_text(screen, t_box):
+def update_text(t_box):
     "Redisplay text box text"
-    # clear out text box
-    t_box.win.erase()
-    # get text_boxes
+    # line number-fu
+    line_num = t_box.line_num % t_box.win.getmaxyx()[0]
     t_box.win.move(0, 0)
     # display text
     maxy, maxx = t_box.win.getmaxyx()
-    t_box.line_num -= 5
-    if t_box.line_num < 0:
-        t_box.line_num = 0
-    for line in t_box.text[t_box.line_num:]:
-        y, x = t_box.win.getyx()
-        if y == maxy:
-            t_box.win.move(0, 0)
-            t_box.line_num -= y
-            break
+    minline = t_box.line_num - line_num
+    if maxy < len(t_box.text):
+        maxline = minline + maxy
+    else:
+        maxline = minline + len(t_box.text)
+    y, x = [0, 0]
+    for line in t_box.text[minline:maxline]:
         while line != "":
-            for ch in line[:maxx]:
-                t_box.win.insstr(ch)
-                t_box.win.move(y, x+1)
-            scroll_a_line(t_box)
+            y, x = t_box.win.getyx()
+            t_box.win.insstr(line[:maxx])
+            if y == maxy - 1:
+                break
+            else:
+                t_box.win.move(y+1, 0)
             line = line[maxx:]
-            if t_box.line_num < len(t_box.text) - 1:
-                t_box.line_num += 1
+            t_box.line_num += 1
+    t_box.line_num -= y
+    t_box.win.move(0,0)
     t_box.win.refresh()
-    screen.refresh()
     # return nothing
     return
 
 def edit_default_text_box(text_box):
     "Edit default text box"
+    # move cursor to top left corner
+    line_num = text_box.line_num % text_box.win.getmaxyx()[0]
+    text_box.win.move(line_num,0)
     return text_box.edit()
 
 def create_screen(screens, cmdlines, cmds, text_boxes):
@@ -267,20 +245,23 @@ def create_screen(screens, cmdlines, cmds, text_boxes):
     text_boxes.append(text_box)
 
     # update screen
-    update_screen(len(screens)-1, screen, text_boxes[-1])
+    screen_num = len(screens) - 1
+    update_screen(screen_num, screen, text_boxes[-1])
 
-    # return nothing
-    return
+    # return screen number
+    return screen_num
 
 def remove_screen(screen_num, screens, cmdlines, cmds, text_boxes):
     "Remove current screen to have -1 screens"
     # remove screen and associated objects
+    screens[screen_num].clear()
+    screens[screen_num].refresh()
     del text_boxes[screen_num]
     del cmds[screen_num]
     del cmdlines[screen_num]
     del screens[screen_num]
     # get new screen number
-    screen_num = 0
+    screen_num -= 1
     screen = screens[screen_num]
     screen.clear()
     screen.refresh()
@@ -299,8 +280,7 @@ def main(stdscr):
     text_boxes = []
 
     # inital screen and text box (Ctrl-g to exit the text box)
-    screen_num = len(screens)
-    create_screen(screens, cmdlines, cmds, text_boxes)
+    screen_num = create_screen(screens, cmdlines, cmds, text_boxes)
     update_statusline(screen_num, screens[screen_num], "Help screen: 'Ctrl-G'+'h'+<Enter>")
     # edit default text box
     edit_default_text_box(text_boxes[screen_num])
@@ -316,7 +296,7 @@ def main(stdscr):
 
         # help buffer display
         if c == 'h' or c == 'help':
-            create_screen(screens, cmdlines, cmds, text_boxes)
+            screen_num = create_screen(screens, cmdlines, cmds, text_boxes)
             t_box = text_boxes[-1]
             t_box.text = [
 "              Help Page              ",
@@ -349,21 +329,20 @@ def main(stdscr):
             for l,line in enumerate(t_box.text):
                 for ch in line:
                     t_box.do_command(ord(ch))
-                if l == len(t_box.text) - 1:
+                if l == t_box.win.getmaxyx()[0]:
                     break
-                else:
-                    scroll_a_line(t_box)
             edit_default_text_box(t_box)
 
 
         # open buffer screen
         elif c == 'b' or c == 'buffer':
-            create_screen(screens, cmdlines, cmds, text_boxes)
+            screen_num = create_screen(screens, cmdlines, cmds, text_boxes)
             t_box = text_boxes[-1]
             t_box.text = [
-"=========  Open Screen Buffers  =========",
-"Warning: This buffer will not auto update",
-"Recommended to remove when done"
+"==========  Open Screen Buffers  ==========",
+" Warning: This buffer will not auto update",
+" Recommended to remove when done",
+"==========================================="
 ]
             for s,scrn in enumerate(screens):
                 if s == len(screens) - 1:
@@ -373,10 +352,8 @@ def main(stdscr):
             for l,line in enumerate(t_box.text):
                 for ch in line:
                     t_box.do_command(ord(ch))
-                if l == len(t_box.text) - 1:
+                if l == t_box.win.getmaxyx()[0]:
                     break
-                else:
-                    scroll_a_line(t_box)
             edit_default_text_box(t_box)
 
 
@@ -388,15 +365,14 @@ def main(stdscr):
 
         # new screen
         elif c == 'n' or c == 'new' or c =='new screen':
-            screen_num = len(screens)
-            create_screen(screens, cmdlines, cmds, text_boxes)
+            screen_num = create_screen(screens, cmdlines, cmds, text_boxes)
             # edit default text box
             edit_default_text_box(text_boxes[screen_num])
 
         # remove screen
         elif c == 'r' or c == 'remove' or c == 'remove screen':
             # if text box has text, ask
-            if len(tbox) > 1:
+            if len(t_box.text) > 1:
                 if len(screens) > 1:
                     update_statusline(screen_num, screen, 'Possibly unsaved work. Remove screen buffer [y/N]?')
                 else:
@@ -471,15 +447,17 @@ def main(stdscr):
             # try to open file
             t_box = text_boxes[screen_num]
             try:
+                filetext = ""
                 with open(c, 'r') as filename:
-                    text_to_insert = filename.readlines()
-                    t_box.win.erase()
-                    t_box.text = ['\n']
-                    for textline in text_to_insert:
-                        for ch in textline:
-                            t_box.do_command(ord(ch))
-                # update statusline
-                update_statusline(screen_num, screen, "")
+                    filetext = filename.readlines()
+                t_box.text = []
+                for line in filetext:
+                    if line != '\n':
+                        t_box.text.append(line.strip('\n'))
+                    else:
+                        t_box.text.append(line)
+                del filetext
+                update_screen(screen_num, screen, t_box)
             except: # update statusline if failed
                 update_statusline(screen_num, screen, 'Error: File Open Failed')
             # edit default text box
