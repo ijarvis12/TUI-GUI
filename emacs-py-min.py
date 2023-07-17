@@ -9,13 +9,14 @@ from time import sleep
 
 class ScrollTextbox(Textbox):
     def __init__(self, win, insert_mode=False):
-            super().__init__(win, insert_mode)
-            self.win.idcok(True)
-            self.win.idlok(True)
-            self.win.scrollok(True)
-            self.stripspaces = True
-            self.line_num = 0
-            self.text = []
+        super().__init__(win, insert_mode)
+        self.win.idcok(True)
+        self.win.idlok(True)
+        self.win.scrollok(True)
+        self.stripspaces = True
+        self.line_num = 0
+        self.top_line_num = 0
+        self.text = []
 
     # overwrite Textbox do_command for scrolling
     def do_command(self, ch):
@@ -48,6 +49,7 @@ class ScrollTextbox(Textbox):
                 if self.line_num > 0:
                     self.win.scroll(-1)
                     self.line_num -= 1
+                    self.top_line_num -= 1
                     self.win.move(y, 0)
                     self.win.insstr(self.text[self.line_num])
                     self.win.move(y, x)
@@ -77,6 +79,7 @@ class ScrollTextbox(Textbox):
             elif y == self.maxy:
                 self.win.scroll(1)
                 self.line_num += 1
+                self.top_line_num += 1
                 self.win.move(y, 0)
                 if self.line_num < len(self.text) - 1:
                     self.win.insstr(self.text[self.line_num])
@@ -96,12 +99,6 @@ class ScrollTextbox(Textbox):
                 self.win.move(y+1, 0)
                 self.text = self.text[:self.line_num] + ['\n'] + self.text[self.line_num:]
                 self.line_num += 1
-            elif y == self.maxy:
-                self.win.scroll(1)
-                self.line_num += 1
-                self.win.move(y, 0)
-                if self.line_num < len(self.text) - 1:
-                    self.win.insstr(self.text[self.line_num])
             if self.line_num > len(self.text) - 1:
                 self.text.append("\n")
         # Ctrl-k (If line is blank, delete it, otherwise clear to end of line)
@@ -121,6 +118,7 @@ class ScrollTextbox(Textbox):
             if y == self.maxy:
                 self.win.scroll(1)
                 self.line_num += 1
+                self.top_line_num += 1
                 if self.line_num < len(self.text) - 1:
                     self.win.move(y, 0)
                     self.win.insstr(self.text[self.line_num])
@@ -152,6 +150,7 @@ class ScrollTextbox(Textbox):
             elif self.line_num > 0:
                 self.win.scroll(-1)
                 self.line_num -= 1
+                self.top_line_num -= 1
                 self.win.move(y, 0)
                 self.win.insstr(self.text[self.line_num])
                 self.win.move(y, x)
@@ -192,12 +191,10 @@ def update_screen(screen_num, screen, text_box):
 
 def update_text(t_box):
     "Redisplay text box text"
-    # line number-fu
-    line_num = t_box.line_num % t_box.win.getmaxyx()[0]
-    t_box.win.move(0, 0)
     # display text
+    t_box.win.move(0, 0)
     maxy, maxx = t_box.win.getmaxyx()
-    minline = t_box.line_num - line_num
+    minline = t_box.top_line_num
     if maxy < len(t_box.text):
         maxline = minline + maxy
     else:
@@ -212,9 +209,8 @@ def update_text(t_box):
             else:
                 t_box.win.move(y+1, 0)
             line = line[maxx:]
-            t_box.line_num += 1
-    t_box.line_num -= y
-    t_box.win.move(0,0)
+    t_box.line_num = t_box.top_line_num
+    t_box.win.move(0, 0)
     t_box.win.refresh()
     # return nothing
     return
@@ -222,8 +218,8 @@ def update_text(t_box):
 def edit_default_text_box(text_box):
     "Edit default text box"
     # move cursor to top left corner
-    line_num = text_box.line_num % text_box.win.getmaxyx()[0]
-    text_box.win.move(line_num,0)
+    text_box.line_num = text_box.top_line_num
+    text_box.win.move(0, 0)
     return text_box.edit()
 
 def create_screen(screens, cmdlines, cmds, text_boxes):
