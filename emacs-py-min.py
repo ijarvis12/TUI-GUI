@@ -27,14 +27,14 @@ class ScrollTextbox(Textbox):
         # sanity check
         if self.line_num > len(self.text) - 1:
             for i in range(len(self.text),self.line_num+1):
-                self.text.append('\n')
+                self.text.append(' ')
         # print character
         if curses.ascii.isprint(ch):
             if self.text[self.line_num] == '\n' and x != 0:
                 self.text[self.line_num] = " " * x
             elif x > len(self.text[self.line_num]):
                 self.text[self.line_num] += " " * (x - len(self.text[self.line_num]))
-                self.text[self.line_num].rstrip('\n')
+                self.text[self.line_num].lstrip('\n')
             self.text[self.line_num] += chr(ch)
             if x == self.maxx:
                 if y == self.maxy:
@@ -104,12 +104,11 @@ class ScrollTextbox(Textbox):
         elif ch == curses.ascii.NL:                            # ^j
             if self.maxy == 0:
                 return 0       # return zero
-            elif y < self.maxy:
-                self.win.insertln()
-                self.win.move(y, 0)
-                self.text = self.text[:self.line_num] + ['\n'] + self.text[self.line_num:]
+            self.win.insertln()
+            self.win.move(y, 0)
+            self.text = self.text[:self.line_num] + [' '] + self.text[self.line_num:]
             if self.line_num > len(self.text) - 1:
-                self.text.append("\n")
+                self.text.append(" ")
         # Ctrl-k (If line is blank, delete it, otherwise clear to end of line)
         elif ch == curses.ascii.VT:                            # ^k
             if x == 0 and self._end_of_line(y) == 0:
@@ -118,7 +117,7 @@ class ScrollTextbox(Textbox):
                 # first undo the effect of self._end_of_line
                 self.win.move(y, x)
                 self.win.clrtoeol()
-            self.text[self.line_num] = "\n"
+            self.text[self.line_num] = " "
         # Ctrl-l (Refresh screen)
         elif ch == curses.ascii.FF:                            # ^l
             self.win.refresh()
@@ -134,21 +133,21 @@ class ScrollTextbox(Textbox):
                     self.win.move(y, 0)
                 else:
                     self.win.move(y, 0)
-                    self.text.append("\n")
+                    self.text.append(" ")
             else:
                 self.win.move(y+1, x)
                 self.line_num += 1
                 if self.line_num > len(self.text) - 1:
-                    self.text.append("\n")
+                    self.text.append(" ")
             if x > len(self.text[self.line_num]):
                 self.win.move(y+1, len(self.text[self.line_num]) - 1)
         # Ctrl-o (Insert a blank line at cursor location)
         elif ch == curses.ascii.SI:                            # ^o
             self.win.insertln()
             if self.line_num > 0:
-                self.text = self.text[0:self.line_num] + ["\n"] + self.text[self.line_num:]
+                self.text = self.text[:self.line_num] + [" "] + self.text[self.line_num:]
             else:
-                self.text = ["\n"] + self.text
+                self.text = [" "] + self.text
         # Ctrl-p (Cursor up, move up one line)
         elif ch in (curses.ascii.DLE, curses.KEY_UP):          # ^p
             if y > 0:
