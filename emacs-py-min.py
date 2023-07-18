@@ -30,11 +30,10 @@ class ScrollTextbox(Textbox):
                 self.text.append(' ')
         # print character
         if curses.ascii.isprint(ch):
-            if self.text[self.line_num] == '\n' and x != 0:
+            if self.text[self.line_num] == ' ' and x != 0:
                 self.text[self.line_num] = " " * x
             elif x > len(self.text[self.line_num]):
                 self.text[self.line_num] += " " * (x - len(self.text[self.line_num]))
-                self.text[self.line_num].lstrip('\n')
             self.text[self.line_num] += chr(ch)
             if x == self.maxx:
                 if y == self.maxy:
@@ -96,7 +95,7 @@ class ScrollTextbox(Textbox):
                 self.win.move(y+1, 0)
                 self.line_num += 1
             if self.line_num > len(self.text) - 1:
-                self.text.append("\n")
+                self.text.append(" ")
         # Ctrl-g (Terminate, returning the window contents)
         elif ch == curses.ascii.BEL:                           # ^g
             return 0           # return zero
@@ -422,8 +421,8 @@ def main(stdscr):
                 with open(c, 'w') as filename:
                     result = ""
                     for line in t_box.text:
-                        if line[-1] == '\n':
-                            result += line
+                        if len(line) = 1 and line[0] == ' ':
+                            result += '\n'
                         else:
                             result += line + '\n'
                     filename.write(result)
@@ -453,7 +452,7 @@ def main(stdscr):
                     if line != '\n':
                         t_box.text.append(line.strip('\n'))
                     else:
-                        t_box.text.append(line)
+                        t_box.text.append(' ')
                 del filetext
                 update_screen(screen_num, screen)
             except: # update statusline if failed
