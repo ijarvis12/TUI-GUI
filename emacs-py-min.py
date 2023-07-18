@@ -24,10 +24,6 @@ class ScrollTextbox(Textbox):
         self._update_max_yx()
         (y, x) = self.win.getyx()
         self.lastcmd = ch
-        # sanity check
-        if self.line_num > len(self.text) - 1:
-            for i in range(len(self.text),self.line_num+1):
-                self.text.append("")
         # print character
         if curses.ascii.isprint(ch):
             if x > len(self.text[self.line_num]):
@@ -133,10 +129,13 @@ class ScrollTextbox(Textbox):
             else:
                 self.win.move(y+1, x)
                 self.line_num += 1
+                # sanity check #
                 if self.line_num > len(self.text) - 1:
-                    self.text.append("")
-            if x > len(self.text[self.line_num]):
-                self.win.move(y+1, len(self.text[self.line_num]) - 1)
+                    for i in range(len(self.text),self.line_num+1):
+                        self.text.append("")
+                # end sanity check #
+                if x > len(self.text[self.line_num]):
+                    self.win.move(y+1, len(self.text[self.line_num]))
         # Ctrl-o (Insert a blank line at cursor location)
         elif ch == curses.ascii.SI:                            # ^o
             self.win.insertln()
@@ -156,8 +155,8 @@ class ScrollTextbox(Textbox):
                 self.win.move(y, 0)
                 self.win.insstr(self.text[self.line_num])
                 self.win.move(y, x)
-            if x > len(self.text[self.line_num]) - 1:
-                self.win.move(y-1, len(self.text[self.line_num]) - 1)
+            if x > len(self.text[self.line_num]):
+                self.win.move(y-1, len(self.text[self.line_num]))
         # return one
         return 1
 
@@ -189,16 +188,16 @@ def get_cmd(screen):
 
 def update_statusline(screen_num, screen, status):
     "Update the statusline"
-    s_maxy, s_maxx = screen.getmaxyx()
+    s_maxy, s_maxx = screen.screen.getmaxyx()
     # statuline string
     if len(status) > 0:
         statusline = '### ' + status + ' '
     else:
-        statusline = '### Screen '+ str(screen_num) + ' '
+        statusline = '### Screen '+ str(screen_num) + '# Row ' + str(screen.text_box.line_num) + ' Col ' + str(screen.text_box.win.getyx()[1]) + ' '
     # redraw bottom hline (statusline)
-    screen.insstr(s_maxy-2, 0, statusline)
-    screen.hline(s_maxy-2, len(statusline) , '#', s_maxx-len(statusline))
-    screen.refresh()
+    screen.screen.insstr(s_maxy-2, 0, statusline)
+    screen.screen.hline(s_maxy-2, len(statusline) , '#', s_maxx-len(statusline))
+    screen.screen.refresh()
     # return nothing
     return
 
@@ -208,7 +207,7 @@ def update_screen(screen_num, screen):
     # redisplay text
     update_text(screen.text_box)
     # update statusline
-    update_statusline(screen_num, screen.screen, "")
+    update_statusline(screen_num, screen, "")
     # return nothing
     return
 
@@ -224,14 +223,12 @@ def update_text(t_box):
         maxline = minline + len(t_box.text)
     y, x = [0, 0]
     for line in t_box.text[minline:maxline]:
-        while line != "":
-            y, x = t_box.win.getyx()
-            t_box.win.insstr(line[:maxx])
-            if y == maxy - 1:
+        y, x = t_box.win.getyx()
+        t_box.win.insstr(line)
+        if y == maxy - 1:
                 break
-            else:
-                t_box.win.move(y+1, 0)
-            line = line[maxx:]
+        else:
+            t_box.win.move(y+1, 0)
     t_box.line_num = t_box.top_line_num
     t_box.win.move(0, 0)
     t_box.win.refresh()
@@ -272,7 +269,7 @@ def main(stdscr):
     # update screen
     screen_num = len(screens) - 1
     update_screen(screen_num, screens[screen_num])
-    update_statusline(screen_num, screens[screen_num].screen, "Help Screen: 'Ctrl-G'+'h'+<Enter>")
+    update_statusline(screen_num, screens[screen_num], "Help Screen: 'Ctrl-G'+'h'+<Enter>")
     # edit default text box
     edit_default_text_box(screens[screen_num].text_box)
 
@@ -372,10 +369,10 @@ def main(stdscr):
             # if text box has text, ask
             if len(t_box.text) > 1:
                 if len(screens) > 1:
-                    update_statusline(screen_num, screen.screen, 'Possibly unsaved work. Remove screen buffer [y/N]?')
+                    update_statusline(screen_num, screen, 'Possibly unsaved work. Remove screen buffer [y/N]?')
                 else:
                     # else only one screen buffer
-                    update_statusline(screen_num, screen.screen, 'Possibly unsaved work. Quit [y/N]?')
+                    update_statusline(screen_num, screen, 'Possibly unsaved work. Quit [y/N]?')
                 # get user's choice
                 c = get_cmd(screen)
                 # if user entered yes, and more than one screen buffer, remove current screen buffer
@@ -408,13 +405,13 @@ def main(stdscr):
         # save to file
         elif c == 'fs' or c == 'file save' or c == 'file save as':
             # update statusline
-            update_statusline(screen_num, screen.screen, 'Filename To Save As: ')
+            update_statusline(screen_num, screen, 'Filename To Save As: ')
             # get filename
             c = get_cmd(screen)
             # try to save file
             try:
                 # update statusline
-                update_statusline(screen_num, screen.screen, 'Saving File...')
+                update_statusline(screen_num, screen, 'Saving File...')
                 # save file
                 with open(c, 'w') as filename:
                     result = ""
@@ -422,19 +419,19 @@ def main(stdscr):
                         result += line + '\n'
                     filename.write(result)
                 # update statusline if successful
-                update_statusline(screen_num, screen.screen, 'Save Successful')
+                update_statusline(screen_num, screen, 'Save Successful')
                 sleep(.1)
                 # update statusline
-                update_statusline(screen_num, screen.screen, "")
+                update_statusline(screen_num, screen, "")
             except: # update statusline if failed
-                update_statusline(screen_num, screen.screen, 'Error: File Save Failed')
+                update_statusline(screen_num, screen, 'Error: File Save Failed')
             # edit default text box with updated statusline
             edit_default_text_box(t_box)
 
         # open file
         elif c == 'fo' or c == 'file open':
             # update statusline
-            update_statusline(screen_num, screen.screen, 'File To Open: ')
+            update_statusline(screen_num, screen, 'File To Open: ')
             # get filename
             c = get_cmd(screen)
             # try to open file
@@ -449,7 +446,7 @@ def main(stdscr):
                 del filetext
                 update_screen(screen_num, screen)
             except: # update statusline if failed
-                update_statusline(screen_num, screen.screen, 'Error: File Open Failed')
+                update_statusline(screen_num, screen, 'Error: File Open Failed')
             # edit default text box
             edit_default_text_box(t_box)
 
@@ -469,7 +466,7 @@ def main(stdscr):
                 # if text in text boxes, ask if really want to quit
                 screen = screens[screen_num]
                 update_screen(screen_num, screen)
-                update_statusline(screen_num, screen.screen, 'Possibly Unsaved Work. Quit Anyways? [y/N]')
+                update_statusline(screen_num, screen, 'Possibly Unsaved Work. Quit Anyways? [y/N]')
                 c = get_cmd(screen)
                 if 'y' in c:
                     break
