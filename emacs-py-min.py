@@ -16,7 +16,7 @@ class ScrollTextbox(Textbox):
         self.stripspaces = True
         self.line_num = 0
         self.top_line_num = 0
-        self.text = []
+        self.text = [""]
 
     # overwrite Textbox do_command for scrolling
     def do_command(self, ch):
