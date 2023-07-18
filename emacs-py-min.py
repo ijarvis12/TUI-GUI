@@ -27,12 +27,10 @@ class ScrollTextbox(Textbox):
         # sanity check
         if self.line_num > len(self.text) - 1:
             for i in range(len(self.text),self.line_num+1):
-                self.text.append(' ')
+                self.text.append("")
         # print character
         if curses.ascii.isprint(ch):
-            if self.text[self.line_num] == ' ' and x != 0:
-                self.text[self.line_num] = " " * x
-            elif x > len(self.text[self.line_num]):
+            if x > len(self.text[self.line_num]):
                 self.text[self.line_num] += " " * (x - len(self.text[self.line_num]))
             self.text[self.line_num] += chr(ch)
             if x == self.maxx:
@@ -95,7 +93,7 @@ class ScrollTextbox(Textbox):
                 self.win.move(y+1, 0)
                 self.line_num += 1
             if self.line_num > len(self.text) - 1:
-                self.text.append(" ")
+                self.text.append("")
         # Ctrl-g (Terminate, returning the window contents)
         elif ch == curses.ascii.BEL:                           # ^g
             return 0           # return zero
@@ -105,9 +103,9 @@ class ScrollTextbox(Textbox):
                 return 0       # return zero
             self.win.insertln()
             self.win.move(y, 0)
-            self.text = self.text[:self.line_num] + [' '] + self.text[self.line_num:]
+            self.text = self.text[:self.line_num] + [""] + self.text[self.line_num:]
             if self.line_num > len(self.text) - 1:
-                self.text.append(" ")
+                self.text.append("")
         # Ctrl-k (If line is blank, delete it, otherwise clear to end of line)
         elif ch == curses.ascii.VT:                            # ^k
             if x == 0 and self._end_of_line(y) == 0:
@@ -116,7 +114,7 @@ class ScrollTextbox(Textbox):
                 # first undo the effect of self._end_of_line
                 self.win.move(y, x)
                 self.win.clrtoeol()
-            self.text[self.line_num] = " "
+            self.text[self.line_num] = ""
         # Ctrl-l (Refresh screen)
         elif ch == curses.ascii.FF:                            # ^l
             self.win.refresh()
@@ -131,21 +129,21 @@ class ScrollTextbox(Textbox):
                     self.win.move(y, 0)
                     self.win.insstr(self.text[self.line_num])
                 else:
-                    self.text.append(" ")
+                    self.text.append("")
             else:
                 self.win.move(y+1, x)
                 self.line_num += 1
                 if self.line_num > len(self.text) - 1:
-                    self.text.append(" ")
+                    self.text.append("")
             if x > len(self.text[self.line_num]):
                 self.win.move(y+1, len(self.text[self.line_num]) - 1)
         # Ctrl-o (Insert a blank line at cursor location)
         elif ch == curses.ascii.SI:                            # ^o
             self.win.insertln()
             if self.line_num > 0:
-                self.text = self.text[:self.line_num] + [" "] + self.text[self.line_num:]
+                self.text = self.text[:self.line_num] + [""] + self.text[self.line_num:]
             else:
-                self.text = [" "] + self.text
+                self.text = [""] + self.text
         # Ctrl-p (Cursor up, move up one line)
         elif ch in (curses.ascii.DLE, curses.KEY_UP):          # ^p
             if y > 0:
@@ -421,10 +419,7 @@ def main(stdscr):
                 with open(c, 'w') as filename:
                     result = ""
                     for line in t_box.text:
-                        if len(line) = 1 and line[0] == ' ':
-                            result += '\n'
-                        else:
-                            result += line + '\n'
+                        result += line + '\n'
                     filename.write(result)
                 # update statusline if successful
                 update_statusline(screen_num, screen.screen, 'Save Successful')
@@ -449,10 +444,8 @@ def main(stdscr):
                     filetext = filename.readlines()
                 t_box.text = []
                 for line in filetext:
-                    if line != '\n':
-                        t_box.text.append(line.strip('\n'))
-                    else:
-                        t_box.text.append(' ')
+                    t_box.text.append(line.strip('\n'))
+                # free up memory (could be large file)
                 del filetext
                 update_screen(screen_num, screen)
             except: # update statusline if failed
