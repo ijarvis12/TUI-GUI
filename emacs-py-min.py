@@ -127,12 +127,11 @@ class ScrollTextbox(Textbox):
                 self.win.scroll(1)
                 self.line_num += 1
                 self.top_line_num += 1
+                self.win.move(y, 0)
                 if self.line_num < len(self.text) - 1:
                     self.win.move(y, 0)
                     self.win.insstr(self.text[self.line_num])
-                    self.win.move(y, 0)
                 else:
-                    self.win.move(y, 0)
                     self.text.append(" ")
             else:
                 self.win.move(y+1, x)
@@ -153,8 +152,6 @@ class ScrollTextbox(Textbox):
             if y > 0:
                 self.win.move(y-1, x)
                 self.line_num -= 1
-                if x > len(self.text[self.line_num]) - 1:
-                    self.win.move(y-1, len(self.text[self.line_num]) - 1)
             elif self.line_num > 0:
                 self.win.scroll(-1)
                 self.line_num -= 1
@@ -162,15 +159,36 @@ class ScrollTextbox(Textbox):
                 self.win.move(y, 0)
                 self.win.insstr(self.text[self.line_num])
                 self.win.move(y, x)
+            if x > len(self.text[self.line_num]) - 1:
+                self.win.move(y-1, len(self.text[self.line_num]) - 1)
         # return one
         return 1
 
 
-def get_cmd(cmdline, cmd):
+class Screen():
+    def __init__(self):
+        "Create new screen for editing to have +1 screens"
+        # setup screen
+        self.screen = curses.initscr()
+        #maxy, maxx = screen.getmaxyx()
+        maxy, maxx = self.screen.getmaxyx()
+
+        # setup cmdline
+        self.cmdline = self.screen.subwin(1, maxx, maxy-1, 0)
+        self.cmdline.idcok(True)
+        self.cmd = Textbox(self.cmdline)
+        self.cmd.stripspaces = True
+
+        # setup window
+        win = self.screen.subwin(maxy-2, maxx, 0, 0)
+        self.text_box = ScrollTextbox(win)
+
+
+def get_cmd(screen):
     "Get a command from commandline"
-    cmdline.clear()
-    cmdline.refresh()
-    return cmd.edit().strip(' ').lower()
+    screen.cmdline.clear()
+    screen.cmdline.refresh()
+    return screen.cmd.edit().strip(' ').lower()
 
 def update_statusline(screen_num, screen, status):
     "Update the statusline"
@@ -187,13 +205,13 @@ def update_statusline(screen_num, screen, status):
     # return nothing
     return
 
-def update_screen(screen_num, screen, text_box):
+def update_screen(screen_num, screen):
     "Redraw the screen"
-    screen.clear()
+    screen.screen.clear()
     # redisplay text
-    update_text(text_box)
+    update_text(screen.text_box)
     # update statusline
-    update_statusline(screen_num, screen, "")
+    update_statusline(screen_num, screen.screen, "")
     # return nothing
     return
 
@@ -230,47 +248,19 @@ def edit_default_text_box(text_box):
     text_box.win.move(0, 0)
     return text_box.edit()
 
-def create_screen(screens, cmdlines, cmds, text_boxes):
-    "Create new screen for editing to have +1 screens"
-    # setup screen
-    screens.append(curses.initscr())
-    screen = screens[-1]
-    maxy, maxx = screen.getmaxyx()
-
-    # setup cmdline
-    cmdlines.append(screen.subwin(1, maxx, maxy-1, 0))
-    cmdlines[-1].idcok(True)
-    cmds.append(Textbox(cmdlines[-1]))
-    cmds[-1].stripspaces = True
-
-    # setup window
-    win = screen.subwin(maxy-2, maxx, 0, 0)
-    text_box = ScrollTextbox(win)
-    text_boxes.append(text_box)
-
-    # update screen
-    screen_num = len(screens) - 1
-    update_screen(screen_num, screen, text_boxes[-1])
-
-    # return screen number
-    return screen_num
-
-def remove_screen(screen_num, screens, cmdlines, cmds, text_boxes):
+def remove_screen(screen_num, screens):
     "Remove current screen to have -1 screens"
     # remove screen and associated objects
-    screens[screen_num].clear()
-    screens[screen_num].refresh()
-    del text_boxes[screen_num]
-    del cmds[screen_num]
-    del cmdlines[screen_num]
+    screens[screen_num].screen.clear()
+    screens[screen_num].screen.refresh()
     del screens[screen_num]
     # get new screen number
-    screen_num -= 1
-    screen = screens[screen_num]
+    screen_num = 0
+    screen = screens[screen_num].screen
     screen.clear()
     screen.refresh()
     # update screen
-    update_screen(screen_num, screen, text_boxes[screen_num])
+    update_screen(screen_num, screen)
     # return screen number
     return screen_num
 
@@ -279,29 +269,30 @@ def main(stdscr):
     # screen setup
     stdscr.clear()
     screens = []
-    cmdlines = []
-    cmds = []
-    text_boxes = []
 
     # inital screen and text box (Ctrl-g to exit the text box)
-    screen_num = create_screen(screens, cmdlines, cmds, text_boxes)
-    update_statusline(screen_num, screens[screen_num], "Help screen: 'Ctrl-G'+'h'+<Enter>")
+    screens.append(Screen())
+    # update screen
+    screen_num = len(screens) - 1
+    update_screen(screen_num, screens[screen_num])
+    update_statusline(screen_num, screens[screen_num].screen, "Help Screen: 'Ctrl-G'+'h'+<Enter>")
     # edit default text box
-    edit_default_text_box(text_boxes[screen_num])
+    edit_default_text_box(screens[screen_num].text_box)
 
     # run the program
     c = ''
     while c != 'q' or c != 'quit' or c != 'exit':
         # get info
         screen = screens[screen_num]
-        cmdline = cmdlines[screen_num]
-        cmd = cmds[screen_num]
-        t_box = text_boxes[screen_num]
+        t_box = screens[screen_num].text_box
 
         # help buffer display
         if c == 'h' or c == 'help':
-            screen_num = create_screen(screens, cmdlines, cmds, text_boxes)
-            t_box = text_boxes[-1]
+            screens.append(Screen())
+            # update screen
+            screen_num = len(screens) - 1
+            update_screen(screen_num, screens[screen_num])
+            t_box = screens[screen_num].text_box
             t_box.text = [
 "              Help Page              ",
 "-------------------------------------",
@@ -330,9 +321,9 @@ def main(stdscr):
 "'f[ile ]o[pen]' = open file",
 "'b[uffer]' = list open screen buffers in new screen buffer"
 ]
+            t_box.win.move(0, 0)
             for l,line in enumerate(t_box.text):
-                for ch in line:
-                    t_box.do_command(ord(ch))
+                t_box.win.insstr(l, 0, line)
                 if l == t_box.win.getmaxyx()[0]:
                     break
             edit_default_text_box(t_box)
@@ -340,8 +331,11 @@ def main(stdscr):
 
         # open buffer screen
         elif c == 'b' or c == 'buffer':
-            screen_num = create_screen(screens, cmdlines, cmds, text_boxes)
-            t_box = text_boxes[-1]
+            screens.append(Screen())
+            # update screen
+            screen_num = len(screens) - 1
+            update_screen(screen_num, screens[screen_num])
+            t_box = screens[screen_num].text_box
             t_box.text = [
 "==========  Open Screen Buffers  ==========",
 " Warning: This buffer will not auto update",
@@ -353,9 +347,9 @@ def main(stdscr):
                     t_box.text.append("* Screen "+str(s)+" * (Buffer Window)")
                 else:
                     t_box.text.append("  Screen "+str(s))
+            t_box.win.move(0, 0)
             for l,line in enumerate(t_box.text):
-                for ch in line:
-                    t_box.do_command(ord(ch))
+                t_box.win.insstr(l, 0, line)
                 if l == t_box.win.getmaxyx()[0]:
                     break
             edit_default_text_box(t_box)
@@ -369,32 +363,35 @@ def main(stdscr):
 
         # new screen
         elif c == 'n' or c == 'new' or c =='new screen':
-            screen_num = create_screen(screens, cmdlines, cmds, text_boxes)
+            screens.append(Screen())
+            # update screen
+            screen_num = len(screens) - 1
+            update_screen(screen_num, screens[screen_num])
             # edit default text box
-            edit_default_text_box(text_boxes[screen_num])
+            edit_default_text_box(screens[screen_num].text_box)
 
         # remove screen
         elif c == 'r' or c == 'remove' or c == 'remove screen':
             # if text box has text, ask
             if len(t_box.text) > 1:
                 if len(screens) > 1:
-                    update_statusline(screen_num, screen, 'Possibly unsaved work. Remove screen buffer [y/N]?')
+                    update_statusline(screen_num, screen.screen, 'Possibly unsaved work. Remove screen buffer [y/N]?')
                 else:
                     # else only one screen buffer
-                    update_statusline(screen_num, screen, 'Possibly unsaved work. Quit [y/N]?')
+                    update_statusline(screen_num, screen.screen, 'Possibly unsaved work. Quit [y/N]?')
                 # get user's choice
-                c = get_cmd(cmdlines[screen_num], cmds[screen_num])
+                c = get_cmd(screen)
                 # if user entered yes, and more than one screen buffer, remove current screen buffer
                 if 'y' in c and len(screens) > 1:
-                    screen_num = remove_screen(screen_num, screens, cmdlines, cmds, text_boxes)
+                    screen_num = remove_screen(screen_num, screens)
                 # else if user entered yes, and only one screen buffer, quit
                 elif 'y' in c:
                     break
                 # edit text box
-                edit_default_text_box(text_boxes[screen_num])
+                edit_default_text_box(screens[screen_num].text_box)
             else: # else remove screen or quit
                 if len(screens) > 1:
-                    screen_num = remove_screen(screen_num, screens, cmdlines, cmds, text_boxes)
+                    screen_num = remove_screen(screen_num, screens)
                 else:
                     break
 
@@ -405,22 +402,22 @@ def main(stdscr):
                 screen_num += 1
             else:
                 screen_num = 0
-            screen = screens[screen_num]
+            screen = screens[screen_num].screen
             # update screen
-            update_screen(screen_num, screen, text_boxes[screen_num])
+            update_screen(screen_num, screen)
             # edit default text box
-            edit_default_text_box(text_boxes[screen_num])
+            edit_default_text_box(screen.text_box)
 
         # save to file
         elif c == 'fs' or c == 'file save' or c == 'file save as':
             # update statusline
-            update_statusline(screen_num, screen, 'Filename To Save As: ')
+            update_statusline(screen_num, screen.screen, 'Filename To Save As: ')
             # get filename
-            c = get_cmd(cmdline, cmd)
+            c = get_cmd(screen)
             # try to save file
             try:
                 # update statusline
-                update_statusline(screen_num, screen, 'Saving File...')
+                update_statusline(screen_num, screen.screen, 'Saving File...')
                 # save file
                 with open(c, 'w') as filename:
                     result = ""
@@ -431,23 +428,22 @@ def main(stdscr):
                             result += line + '\n'
                     filename.write(result)
                 # update statusline if successful
-                update_statusline(screen_num, screen, 'Save Successful')
+                update_statusline(screen_num, screen.screen, 'Save Successful')
                 sleep(.1)
                 # update statusline
-                update_statusline(screen_num, screen, "")
+                update_statusline(screen_num, screen.screen, "")
             except: # update statusline if failed
-                update_statusline(screen_num, screen, 'Error: File Save Failed')
+                update_statusline(screen_num, screen.screen, 'Error: File Save Failed')
             # edit default text box with updated statusline
             edit_default_text_box(t_box)
 
         # open file
         elif c == 'fo' or c == 'file open':
             # update statusline
-            update_statusline(screen_num, screen, 'File To Open: ')
+            update_statusline(screen_num, screen.screen, 'File To Open: ')
             # get filename
-            c = get_cmd(cmdline, cmd)
+            c = get_cmd(screen)
             # try to open file
-            t_box = text_boxes[screen_num]
             try:
                 filetext = ""
                 with open(c, 'r') as filename:
@@ -459,25 +455,30 @@ def main(stdscr):
                     else:
                         t_box.text.append(line)
                 del filetext
-                update_screen(screen_num, screen, t_box)
+                update_screen(screen_num, screen)
             except: # update statusline if failed
-                update_statusline(screen_num, screen, 'Error: File Open Failed')
+                update_statusline(screen_num, screen.screen, 'Error: File Open Failed')
             # edit default text box
             edit_default_text_box(t_box)
 
 
         # get cmd from cmdline
-        c = get_cmd(cmdlines[screen_num], cmds[screen_num])
+        screen = screens[screen_num]
+        c = get_cmd(screen)
         # check for unsaved work before quitting
         if len(c) < 1:
             flag = False
-            for box in text_boxes:
-                if len(box.text) > 1:
+            for s,scrn in enumerate(screens):
+                if len(scrn.text_box.text) > 1:
                     flag = True
+                    screen_num = s
+                    break
             if flag:
                 # if text in text boxes, ask if really want to quit
-                update_statusline(screen_num, screen, 'Possibly Unsaved Work. Quit Anyways? [y/N]')
-                c = get_cmd(cmdlines[screen_num], cmds[screen_num])
+                screen = screens[screen_num]
+                update_screen(screen_num, screen)
+                update_statusline(screen_num, screen.screen, 'Possibly Unsaved Work. Quit Anyways? [y/N]')
+                c = get_cmd(screen)
                 if 'y' in c:
                     break
                 else:
