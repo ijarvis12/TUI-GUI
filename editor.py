@@ -27,12 +27,8 @@ windows = Notebook(frame)
 windows.pack()
 
 def add_window(windows):
-    sub_frame = Frame(windows)
-    textpad = Text(sub_frame, bd=2, width=100, height=32, relief=SUNKEN)
-    textpad.pack()
-    entry = Entry(sub_frame, width=100)
-    entry.pack()
-    windows.add(sub_frame)
+    textpad = Text(windows, bd=2, width=100, height=33, relief=SUNKEN)
+    windows.add(textpad)
     return
 
 add_window(windows)
