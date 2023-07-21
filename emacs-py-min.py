@@ -17,6 +17,13 @@ class ScrollTextbox(Textbox):
         self.line_num = 0
         self.top_line_num = 0
         self.text = [""]
+        self.save_needed = False
+
+    def toggle_save_needed(self, bool):
+        "Set save_needed bool"
+        self.save_needed = bool
+        # return nothing
+        return
 
     # overwrite Textbox do_command for scrolling
     def do_command(self, ch):
@@ -26,6 +33,7 @@ class ScrollTextbox(Textbox):
         self.lastcmd = ch
         # print character
         if curses.ascii.isprint(ch):
+            self.toggle_save_needed(True)
             if x > len(self.text[self.line_num]):
                 self.text[self.line_num] += " " * (x - len(self.text[self.line_num]))
             self.text[self.line_num] += chr(ch)
@@ -65,6 +73,7 @@ class ScrollTextbox(Textbox):
                 self.text[self.line_num] = self.text[self.line_num][:x] + self.text[self.line_num][x+1:]
         # Ctrl-d (Delete character under cursor)
         elif ch == curses.ascii.EOT:                           # ^d
+            self.toggle_save_needed(True)
             self.win.delch()
             self.text[self.line_num] = self.text[self.line_num][:x] + self.text[self.line_num][x+1:]
         # Ctrl-e (Go to right edge (stripspaces off) or end of line (stripspaces on))
@@ -96,6 +105,7 @@ class ScrollTextbox(Textbox):
         elif ch == curses.ascii.NL:                            # ^j
             if self.maxy == 0:
                 return 0       # return zero
+            self.toggle_save_needed(True)
             self.win.move(y+1, 0)
             self.win.insertln()
             self.line_num += 1
@@ -104,6 +114,7 @@ class ScrollTextbox(Textbox):
                 self.text.append("")
         # Ctrl-k (If line is blank, delete it, otherwise clear to end of line)
         elif ch == curses.ascii.VT:                            # ^k
+            self.toggle_save_needed(True)
             if x == 0 and self._end_of_line(y) == 0:
                 self.win.deleteln()
             else:
@@ -124,6 +135,7 @@ class ScrollTextbox(Textbox):
                 if self.line_num < len(self.text):
                     self.win.insstr(self.text[self.line_num])
                 else:
+                    self.toggle_save_needed(True)
                     self.text.append("")
                 self.win.move(y, x)
             else:
@@ -138,6 +150,7 @@ class ScrollTextbox(Textbox):
                 self.win.move(y+1, len(self.text[self.line_num]))
         # Ctrl-o (Insert a blank line at cursor location)
         elif ch == curses.ascii.SI:                            # ^o
+            self.toggle_save_needed(True)
             self.win.insertln()
             if self.line_num > 0:
                 self.text = self.text[:self.line_num] + [""] + self.text[self.line_num:]
@@ -166,28 +179,17 @@ class Buffer():
     def __init__(self, stdscr):
         "Create new buffer for editing to have +1 buffers"
         # setup buffer
-#        self.screen = curses.initscr()
-#        maxy, maxx = self.screen.getmaxyx()
         maxy, maxx = stdscr.getmaxyx()
 
         # setup cmdline
-#        cmdline = self.screen.subwin(1, maxx, maxy-1, 0)
         cmdline = stdscr.subwin(1, maxx, maxy-1, 0)
         cmdline.idcok(True)
         self.cmd = Textbox(cmdline)
         self.cmd.stripspaces = True
 
         # setup text box
-#        win = self.screen.subwin(maxy-2, maxx, 0, 0)
         win = stdscr.subwin(maxy-2, maxx, 0, 0)
         self.text_box = ScrollTextbox(win)
-        self.save_needed = False
-
-    def toggle_save_needed(self, bool):
-        "Set save_needed bool"
-        self.save_needed = bool
-        # return nothing
-        return
 
 
 class Buffers():
@@ -213,8 +215,6 @@ class Buffers():
     def update_statusline(self, status):
         "Update the statusline"
         current_buffer = self.current_buffer
-#        screen = current_buffer.screen
-#        s_maxy, s_maxx = screen.getmaxyx()
         s_maxy, s_maxx = self.screen.getmaxyx()
         # statuline string
         if len(status) > 0:
@@ -222,9 +222,6 @@ class Buffers():
         else:
             statusline = '### Buffer '+ str(self.buffer_num) + ' ' + '# Row ' + str(current_buffer.text_box.line_num) + ' Col ' + str(current_buffer.text_box.win.getyx()[1]) + ' '
         # redraw bottom hline (statusline)
-#        screen.insstr(s_maxy-2, 0, statusline)
-#        screen.hline(s_maxy-2, len(statusline) , '#', s_maxx-len(statusline))
-#        screen.refresh()
         self.screen.insstr(s_maxy-2, 0, statusline)
         self.screen.hline(s_maxy-2, len(statusline) , '#', s_maxx-len(statusline))
         self.screen.refresh()
@@ -262,7 +259,6 @@ class Buffers():
             # Update the buffer number
             self.buffer_num = buffer_num
             self.current_buffer = self.buffers[buffer_num]
-#        self.current_buffer.screen.clear()
         self.screen.clear()
         # redisplay text
         self.update_text()
@@ -283,8 +279,6 @@ class Buffers():
     def del_buffer(self):
         "Delete current buffer and update buffer number (and current buffer)"
         # remove buffer and associated objects
-#        self.current_buffer.screen.clear()
-#        self.current_buffer.screen.refresh()
         self.screen.clear()
         self.screen.refresh()
         del self.buffers[self.buffer_num]
@@ -302,7 +296,7 @@ class Buffers():
         # if more than one buffer...
         if len(self.buffers) > 1:
             # if the buffer has unsaved work, ask about removing
-            if self.current_buffer.save_needed:
+            if self.current_buffer.text_box.save_needed:
                 self.update_statusline('Unsaved work. Remove buffer [y/N]?')
                 # get user's choice
                 cmd = self.get_cmd()
@@ -312,7 +306,7 @@ class Buffers():
                 self.del_buffer()
         else: # else if only buffer...
             # if unsaved work, ask
-            if self.current_buffer.save_needed:
+            if self.current_buffer.text_box.save_needed:
                 self.update_statusline('Unsaved work. Quit [y/N]?')
                 # get user's choice
                 cmd = self.get_cmd()
@@ -477,7 +471,7 @@ def main(stdscr):
                 # update statusline if successful
                 emacs.update_statusline('Save Successful')
                 # No save needed anymore, at least until another edit
-                buffer.toggle_save_needed(False)
+                buffer.text_box.toggle_save_needed(False)
                 # pause for a tiny bit to show the updated statusline before updating again
                 sleep(.1)
                 # update statusline
