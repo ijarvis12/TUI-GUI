@@ -82,7 +82,7 @@ class ScrollTextbox(Textbox):
                 self.line_num += 1
                 self.top_line_num += 1
                 self.win.move(y, 0)
-                if self.line_num < len(self.text) - 1:
+                if self.line_num < len(self.text):
                     self.win.insstr(self.text[self.line_num])
             else:
                 self.win.move(y+1, 0)
@@ -121,10 +121,11 @@ class ScrollTextbox(Textbox):
                 self.line_num += 1
                 self.top_line_num += 1
                 self.win.move(y, 0)
-                if self.line_num < len(self.text) - 1:
+                if self.line_num < len(self.text):
                     self.win.insstr(self.text[self.line_num])
                 else:
                     self.text.append("")
+                self.win.move(y, x)
             else:
                 self.win.move(y+1, x)
                 self.line_num += 1
@@ -133,8 +134,8 @@ class ScrollTextbox(Textbox):
                     for i in range(len(self.text),self.line_num+1):
                         self.text.append("")
                 # end sanity check #
-                if x > len(self.text[self.line_num]):
-                    self.win.move(y+1, len(self.text[self.line_num]))
+            if x > len(self.text[self.line_num]):
+                self.win.move(y+1, len(self.text[self.line_num]))
         # Ctrl-o (Insert a blank line at cursor location)
         elif ch == curses.ascii.SI:                            # ^o
             self.win.insertln()
@@ -329,7 +330,7 @@ def main(stdscr):
     ### start of program while loop ###
     # to start, edit default text box
     cmd = 'edit'
-    while cmd != 'q' or cmd != 'quit' or cmd != 'exit':
+    while cmd != 'q' and cmd != 'quit' and cmd != 'exit':
         # get info
         buffer = emacs.current_buffer
         t_box = buffer.text_box
