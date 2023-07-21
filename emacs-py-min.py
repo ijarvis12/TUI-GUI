@@ -98,8 +98,8 @@ class ScrollTextbox(Textbox):
                 return 0       # return zero
             self.win.move(y+1, 0)
             self.win.insertln()
-            self.text = self.text[:self.line_num] + [""] + self.text[self.line_num:]
             self.line_num += 1
+            self.text = self.text[:self.line_num] + [""] + self.text[self.line_num:]
             if self.line_num > len(self.text) - 1:
                 self.text.append("")
         # Ctrl-k (If line is blank, delete it, otherwise clear to end of line)
@@ -163,20 +163,23 @@ class ScrollTextbox(Textbox):
 
 
 class Buffer():
-    def __init__(self):
+    def __init__(self, stdscr):
         "Create new buffer for editing to have +1 buffers"
         # setup buffer
-        self.screen = curses.initscr()
-        maxy, maxx = self.screen.getmaxyx()
+#        self.screen = curses.initscr()
+#        maxy, maxx = self.screen.getmaxyx()
+        maxy, maxx = stdscr.getmaxyx()
 
         # setup cmdline
-        cmdline = self.screen.subwin(1, maxx, maxy-1, 0)
+#        cmdline = self.screen.subwin(1, maxx, maxy-1, 0)
+        cmdline = stdscr.subwin(1, maxx, maxy-1, 0)
         cmdline.idcok(True)
         self.cmd = Textbox(cmdline)
         self.cmd.stripspaces = True
 
         # setup text box
-        win = self.screen.subwin(maxy-2, maxx, 0, 0)
+#        win = self.screen.subwin(maxy-2, maxx, 0, 0)
+        win = stdscr.subwin(maxy-2, maxx, 0, 0)
         self.text_box = ScrollTextbox(win)
         self.save_needed = False
 
@@ -188,15 +191,16 @@ class Buffer():
 
 
 class Buffers():
-    def __init__(self):
+    def __init__(self, stdscr):
         "Initialize the Application"
-        self.buffers = [Buffer()]
+        self.screen = stdscr
+        self.buffers = [Buffer(stdscr)]
         self.buffer_num = 0
         self.current_buffer = self.buffers[0]
 
     def add_buffer(self):
         "Add a buffer"
-        self.buffers.append(Buffer())
+        self.buffers.append(Buffer(self.screen))
         self.buffer_num = len(self.buffers) - 1
         self.current_buffer = self.buffers[-1]
 
@@ -209,17 +213,22 @@ class Buffers():
     def update_statusline(self, status):
         "Update the statusline"
         current_buffer = self.current_buffer
-        screen = current_buffer.screen
-        s_maxy, s_maxx = screen.getmaxyx()
+#        screen = current_buffer.screen
+#        s_maxy, s_maxx = screen.getmaxyx()
+        s_maxy, s_maxx = self.screen.getmaxyx()
         # statuline string
         if len(status) > 0:
             statusline = '### ' + status + ' '
         else:
             statusline = '### Buffer '+ str(self.buffer_num) + ' ' + '# Row ' + str(current_buffer.text_box.line_num) + ' Col ' + str(current_buffer.text_box.win.getyx()[1]) + ' '
         # redraw bottom hline (statusline)
-        screen.insstr(s_maxy-2, 0, statusline)
-        screen.hline(s_maxy-2, len(statusline) , '#', s_maxx-len(statusline))
-        screen.refresh()
+#        screen.insstr(s_maxy-2, 0, statusline)
+#        screen.hline(s_maxy-2, len(statusline) , '#', s_maxx-len(statusline))
+#        screen.refresh()
+        self.screen.insstr(s_maxy-2, 0, statusline)
+        self.screen.hline(s_maxy-2, len(statusline) , '#', s_maxx-len(statusline))
+        self.screen.refresh()
+
         # return nothing
         return
 
@@ -253,7 +262,8 @@ class Buffers():
             # Update the buffer number
             self.buffer_num = buffer_num
             self.current_buffer = self.buffers[buffer_num]
-        self.current_buffer.screen.clear()
+#        self.current_buffer.screen.clear()
+        self.screen.clear()
         # redisplay text
         self.update_text()
         # update statusline
@@ -273,8 +283,10 @@ class Buffers():
     def del_buffer(self):
         "Delete current buffer and update buffer number (and current buffer)"
         # remove buffer and associated objects
-        self.current_buffer.screen.clear()
-        self.current_buffer.screen.refresh()
+#        self.current_buffer.screen.clear()
+#        self.current_buffer.screen.refresh()
+        self.screen.clear()
+        self.screen.refresh()
         del self.buffers[self.buffer_num]
         # update buffer number (and buffer)
         if self.buffer_num > 0:
@@ -321,7 +333,7 @@ def main(stdscr):
     ### start of buffers setup ###
     stdscr.clear()
     # inital buffer and text box (Ctrl-g to exit the text box)
-    emacs = Buffers()
+    emacs = Buffers(stdscr)
     # update buffer
     emacs.update_buffer()
     emacs.update_statusline("Help buffer: 'Ctrl-G'+'h'+<Enter>")
