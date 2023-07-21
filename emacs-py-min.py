@@ -184,8 +184,8 @@ class Buffer():
         # setup cmdline
         cmdline = stdscr.subwin(1, maxx, maxy-1, 0)
         cmdline.idcok(True)
-        self.cmd = Textbox(cmdline)
-        self.cmd.stripspaces = True
+        self.cmd_box = Textbox(cmdline)
+        self.cmd_box.stripspaces = True
 
         # setup text box
         win = stdscr.subwin(maxy-2, maxx, 0, 0)
@@ -196,6 +196,7 @@ class Buffers():
     def __init__(self, stdscr):
         "Initialize the Application"
         self.screen = stdscr
+        self.cmd = 'edit'
         self.buffers = [Buffer(stdscr)]
         self.buffer_num = 0
         self.current_buffer = self.buffers[0]
@@ -205,12 +206,16 @@ class Buffers():
         self.buffers.append(Buffer(self.screen))
         self.buffer_num = len(self.buffers) - 1
         self.current_buffer = self.buffers[-1]
+        # return nothing
+        return
 
     def get_cmd(self):
         "Get a command from commandline"
-        self.current_buffer.cmd.win.clear()
-        self.current_buffer.cmd.win.refresh()
-        return self.current_buffer.cmd.edit().strip(' ').lower()
+        self.current_buffer.cmd_box.win.clear()
+        self.current_buffer.cmd_box.win.refresh()
+        self.cmd = self.current_buffer.cmd_box.edit().strip(' ').lower()
+        # return nothing
+        return
 
     def update_statusline(self, status):
         "Update the statusline"
@@ -299,8 +304,8 @@ class Buffers():
             if self.current_buffer.text_box.save_needed:
                 self.update_statusline('Unsaved work. Remove buffer [y/N]?')
                 # get user's choice
-                cmd = self.get_cmd()
-                if 'y' in cmd: # if user entered yes, remove buffer
+                self.get_cmd()
+                if 'y' in self.cmd: # if user entered yes, remove buffer
                     self.del_buffer()
             else: # else buffer has no unsaved work, safe to remove
                 self.del_buffer()
@@ -309,8 +314,8 @@ class Buffers():
             if self.current_buffer.text_box.save_needed:
                 self.update_statusline('Unsaved work. Quit [y/N]?')
                 # get user's choice
-                cmd = self.get_cmd()
-                if 'y' in cmd: # if user entered yes, quit
+                self.get_cmd()
+                if 'y' in self.cmd: # if user entered yes, quit
                     curses.endwin()
                     exit()
             else: # else no unsaved work, quit
@@ -320,36 +325,33 @@ class Buffers():
         return
 
 
-### MAIN PROGRAM ###
-def main(stdscr):
-    "Main program loop"
+    def mainloop(self):
+        "Main program loop"
 
-    ### start of buffers setup ###
-    stdscr.clear()
-    # inital buffer and text box (Ctrl-g to exit the text box)
-    emacs = Buffers(stdscr)
-    # update buffer
-    emacs.update_buffer()
-    emacs.update_statusline("Help buffer: 'Ctrl-G'+'h'+<Enter>")
-    ### end buffers setup ###
+        ### start of buffers setup ###
+        self.screen.clear()
+        # update buffer
+        self.update_buffer()
+        self.update_statusline("Help buffer: 'Ctrl-G'+'h'+<Enter>")
+        ### end buffers setup ###
 
-    ### start of program while loop ###
-    # to start, edit default text box
-    cmd = 'edit'
-    while cmd != 'q' and cmd != 'quit' and cmd != 'exit':
-        # get info
-        buffer = emacs.current_buffer
-        t_box = buffer.text_box
+        ### start of program while loop ###
+        # to start, edit default text box
+        self.cmd = 'edit'
+        while self.cmd != 'q' and self.cmd != 'quit' and self.cmd != 'exit':
+            # get info
+            buffer = self.current_buffer
+            t_box = buffer.text_box
 
 
-        # COMMAND: help buffer display
-        if cmd == 'h' or cmd == 'help':
-            emacs.add_buffer()
-            # update buffer
-            emacs.update_buffer()
-            # set text box help text
-            t_box = emacs.current_buffer.text_box
-            t_box.text = [
+            # COMMAND: help buffer display
+            if self.cmd == 'h' or self.cmd == 'help':
+                self.add_buffer()
+                # update buffer
+                self.update_buffer()
+                # set text box help text
+                t_box = self.current_buffer.text_box
+                t_box.text = [
 "              Help Page              ",
 "-------------------------------------",
 "====  Text Box Commands  ====",
@@ -377,158 +379,176 @@ def main(stdscr):
 "'f[ile ]o[pen]' = open file",
 "'o[pen buffers]' = list open buffers in new buffer"
 ]
-            # display help text
-            t_box.win.move(0, 0)
-            for l,line in enumerate(t_box.text):
-                t_box.win.insstr(l, 0, line)
-                if l == t_box.win.getmaxyx()[0]:
-                    break
-            # edit the text box
-            emacs.edit_default_text_box()
+                # display help text
+                t_box.win.move(0, 0)
+                for l,line in enumerate(t_box.text):
+                    t_box.win.insstr(l, 0, line)
+                    if l == t_box.win.getmaxyx()[0]:
+                        break
+                # edit the text box
+                self.edit_default_text_box()
 
 
-        # COMMAND: open buffer with numbered open buffers
-        elif cmd == 'o' or cmd == 'open buffers':
-            emacs.add_buffer()
-            # update buffer
-            emacs.update_buffer()
-            # set text box header text
-            t_box = emacs.current_buffer.text_box
-            t_box.text = [
+            # COMMAND: open buffer with numbered open buffers
+            elif self.cmd == 'o' or self.cmd == 'open buffers':
+                self.add_buffer()
+                # update buffer
+                self.update_buffer()
+                # set text box header text
+                t_box = self.current_buffer.text_box
+                t_box.text = [
 "==========  Open buffer Buffers  ==========",
 " Warning: This buffer will not auto update ",
 "      Recommended to remove when done      ",
 "==========================================="
 ]
-            # get open buffers
-            for b,buff in enumerate(emacs.buffers):
-                if b == len(emacs.buffers) - 1:
-                    t_box.text.append("* Buffer "+str(b)+" * (Current Buffer)")
-                else:
-                    t_box.text.append("  Buffer "+str(b))
-            # display text box text
-            t_box.win.move(0, 0)
-            for lnum,line_of_text in enumerate(t_box.text):
-                t_box.win.insstr(lnum, 0, line_of_text)
-                if lnum == t_box.win.getmaxyx()[0]:
+                # get open buffers
+                for b,buff in enumerate(self.buffers):
+                    if b == len(self.buffers) - 1:
+                        t_box.text.append("* Buffer "+str(b)+" * (Current Buffer)")
+                    else:
+                        t_box.text.append("  Buffer "+str(b))
+                # display text box text
+                t_box.win.move(0, 0)
+                for lnum,line_of_text in enumerate(t_box.text):
+                    t_box.win.insstr(lnum, 0, line_of_text)
+                    if lnum == t_box.win.getmaxyx()[0]:
+                        break
+                # edit the text box
+                self.edit_default_text_box()
+
+
+            # COMMAND: edit text box
+            elif self.cmd == 'e' or self.cmd == 'edit':
+                self.edit_default_text_box()
+
+
+            # COMMAND: new buffer
+            elif self.cmd == 'n' or self.cmd == 'new' or self.cmd =='new buffer':
+                self.add_buffer()
+                # update buffer
+                self.update_buffer()
+                # edit default text box
+                self.edit_default_text_box()
+
+            # COMMAND: remove buffer
+            elif self.cmd == 'r' or self.cmd == 'remove' or self.cmd == 'remove buffer':
+                self.remove_buffer()
+                # if at least one buffer left, edit default buffer text box
+                if len(self.buffers) > 0:
+                    self.edit_default_text_box()
+                else: # else end program
+                    # break out of while loop to end program
                     break
-            # edit the text box
-            emacs.edit_default_text_box()
 
 
-        # COMMAND: edit text box
-        elif cmd == 'e' or cmd == 'edit':
-            emacs.edit_default_text_box()
+            # COMMAND: next buffer
+            elif self.cmd == 'b' or self.cmd == 'buffer':
+                # set buffer number
+                if self.buffer_num < len(self.buffers) - 1:
+                    self.update_buffer(self.buffer_num + 1)
+                else:
+                    self.update_buffer(0)
+                # edit default text box
+                self.edit_default_text_box()
 
 
-        # COMMAND: new buffer
-        elif cmd == 'n' or cmd == 'new' or cmd =='new buffer':
-            emacs.add_buffer()
-            # update buffer
-            emacs.update_buffer()
-            # edit default text box
-            emacs.edit_default_text_box()
-
-        # COMMAND: remove buffer
-        elif cmd == 'r' or cmd == 'remove' or cmd == 'remove buffer':
-            emacs.remove_buffer()
-            # if at least one buffer left, edit default buffer text box
-            if emacs:
-                emacs.edit_default_text_box()
-            else: # else end program
-                # break out of while loop to end program
-                break
-
-
-        # COMMAND: next buffer
-        elif cmd == 'b' or cmd == 'buffer':
-            # set buffer number
-            if emacs.buffer_num < len(emacs.buffers) - 1:
-                emacs.update_buffer(emacs.buffer_num + 1)
-            else:
-                emacs.update_buffer(0)
-            # edit default text box
-            emacs.edit_default_text_box()
-
-
-        # COMMAND: save to file
-        elif cmd == 'fs' or cmd == 'file save' or cmd == 'file save as':
-            # update statusline
-            emacs.update_statusline('Filename To Save As: ')
-            # get filename
-            filename = emacs.get_cmd()
-            # update statusline
-            emacs.update_statusline('Saving File...')
-            # get text for saving
-            text_to_save = ""
-            for line_of_text in t_box.text:
-                text_to_save += line_of_text + '\n'
-
-            # try to save file
-            try:
-                with open(filename, 'w') as file:
-                    file.write(text_to_save)
-                # update statusline if successful
-                emacs.update_statusline('Save Successful')
-                # No save needed anymore, at least until another edit
-                buffer.text_box.toggle_save_needed(False)
-                # pause for a tiny bit to show the updated statusline before updating again
-                sleep(.1)
+            # COMMAND: save to file
+            elif self.cmd == 'fs' or self.cmd == 'file save' or self.cmd == 'file save as':
                 # update statusline
-                emacs.update_statusline("")
-            except: # update statusline if failed
-                emacs.update_statusline('Error: File Save Failed')
+                self.update_statusline('Filename To Save As: ')
+                # get filename
+                self.get_cmd()
+                filename = self.cmd
 
-           # free up var for memory (could be large file)
-            del text_to_save
-            # edit default text box with updated statusline
-            emacs.edit_default_text_box()
+                # update statusline
+                self.update_statusline('Saving File...')
+                # get text for saving
+                text_to_save = ""
+                for line_of_text in t_box.text:
+                    text_to_save += line_of_text + '\n'
 
-
-        # COMMAND: open file
-        elif cmd == 'fo' or cmd == 'file open':
-            # update statusline
-            emacs.update_statusline('File To Open: ')
-            # get filename
-            filename = emacs.get_cmd()
-            # var to hold text
-            text_from_file = ""
-
-            # try to open file
-            try:
-                with open(filename, 'r') as file:
-                    text_from_file = file.readlines()
-            except: # update statusline if failed
-                emacs.update_statusline('Error: File Open Failed')
-
-            # if any text read from file, add to buffer
-            if len(text_from_file) > 0:
-                t_box.text = []
-                for line in text_from_file:
-                    t_box.text.append(line.strip('\n'))
+                # try to save file
+                try:
+                    with open(filename, 'w') as file:
+                        file.write(text_to_save)
+                    # update statusline if successful
+                    self.update_statusline('Save Successful')
+                    # No save needed anymore, at least until another edit
+                    buffer.text_box.toggle_save_needed(False)
+                    # pause for a tiny bit to show the updated statusline before updating again
+                    sleep(.1)
+                    # update statusline
+                    self.update_statusline("")
+                except: # update statusline if failed
+                    self.update_statusline('Error: File Save Failed')
 
                 # free up var for memory (could be large file)
-                del text_from_file
+                del text_to_save
 
-                # update buffer for displaying the text
-                emacs.update_buffer()
-
-            # edit default text box
-            emacs.edit_default_text_box()
+                # edit default text box with updated statusline
+                self.edit_default_text_box()
 
 
-        # FINALLY: get cmd from cmdline
-        cmd = emacs.get_cmd()
-        # if no cmd entered, edit text box
-        if len(cmd) == 0:
-            emacs.edit_default_text_box()
-        ### end of program while loop ###
+            # COMMAND: open file
+            elif self.cmd == 'fo' or self.cmd == 'file open':
+                # update statusline
+                self.update_statusline('File To Open: ')
+                # get filename
+                self.get_cmd()
+                filename = self.cmd
+
+                # var to hold text
+                text_from_file = ""
+                # try to open file
+                try:
+                    with open(filename, 'r') as file:
+                        text_from_file = file.readlines()
+                except: # update statusline if failed
+                    self.update_statusline('Error: File Open Failed')
+
+                # if any text read from file, add to buffer
+                if len(text_from_file) > 0:
+                    t_box.text = []
+                    for line in text_from_file:
+                        t_box.text.append(line.strip('\n'))
+
+                    # free up var for memory (could be large file)
+                    del text_from_file
+
+                    # update buffer for displaying the text
+                    self.update_buffer()
+
+                # edit default text box
+                self.edit_default_text_box()
 
 
-    # outside of while loop: end the program
+            # FINALLY: get cmd from cmdline
+            self.get_cmd()
+            # if no cmd entered, edit text box
+            if len(self.cmd) == 0:
+                self.edit_default_text_box()
+            ### end of program while loop ###
+
+
+        # Check for unsaved work, and maybe quit
+        for b,buff in enumerate(self.buffers):
+            self.update_buffer(b)
+            self.remove_buffer()
+        # if still open buffers, enter mainloop
+        self.mainloop()
+        # return nothing
+        return
+
+
+def main(stdscr):
+    "The Main Program"
+    emacs = Buffers(stdscr)
+    ### MAIN PROGRAM ###
+    emacs.mainloop()
+    ### END OF MAIN PROGRAM ###
     curses.endwin()
     return
-    ### END OF MAIN PROGRAM ###
 
 
 # entry point for main program, if error, no problem just exit
