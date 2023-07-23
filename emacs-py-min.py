@@ -106,7 +106,12 @@ class ScrollTextbox(Textbox):
             if self.maxy == 0:
                 return 0       # return zero
             self.toggle_save_needed(True)
-            self.win.move(y+1, 0)
+            if y == self.maxy:
+                self.win.scroll(1)
+                self.top_line_num += 1
+                self.win.move(y, 0)
+            else:
+                self.win.move(y+1, 0)
             self.win.insertln()
             self.line_num += 1
             self.text = self.text[:self.line_num] + [""] + self.text[self.line_num:]
