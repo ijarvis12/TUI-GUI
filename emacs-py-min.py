@@ -212,15 +212,8 @@ class ScrollTextbox(Textbox):
 class Buffer():
     def __init__(self, stdscr):
         "Create new buffer for editing to have +1 buffers"
-        # setup buffer
+        # get screen dimensions
         maxy, maxx = stdscr.getmaxyx()
-
-        # setup cmdline
-        cmdline = stdscr.subwin(1, maxx, maxy-1, 0)
-        cmdline.idcok(True)
-        self.cmd_box = Textbox(cmdline)
-        self.cmd_box.stripspaces = True
-
         # setup text box
         win = stdscr.subwin(maxy-2, maxx, 0, 0)
         self.text_box = ScrollTextbox(win)
@@ -232,8 +225,14 @@ class Buffers():
         ### start of buffers setup ###
         self.screen = stdscr
         self.screen.clear()
-        # initialize first buffer
+        maxy, maxx = self.screen.getmaxyx()
+        # setup cmdline
+        cmdline = stdscr.subwin(1, maxx, maxy-1, 0)
+        cmdline.idcok(True)
+        self.cmd_box = Textbox(cmdline)
+        self.cmd_box.stripspaces = True
         self.cmd = 'edit'
+        # initialize first buffer
         self.buffers = [Buffer(self.screen)]
         self.buffer_num = 0
         self.current_buffer = self.buffers[0]
@@ -252,9 +251,9 @@ class Buffers():
 
     def get_cmd(self):
         "Get a command from commandline"
-        self.current_buffer.cmd_box.win.clear()
-        self.current_buffer.cmd_box.win.refresh()
-        self.cmd = self.current_buffer.cmd_box.edit().strip(' ').lower()
+        self.cmd_box.win.clear()
+        self.cmd_box.win.refresh()
+        self.cmd = self.cmd_box.edit().strip(' ').lower()
         # return nothing
         return
 
@@ -452,6 +451,7 @@ class Buffers():
                 self.update_buffer()
                 # edit default text box
                 self.edit_default_text_box()
+
 
             # COMMAND: remove buffer
             elif self.cmd == 'r' or self.cmd == 'remove' or self.cmd == 'remove buffer':
