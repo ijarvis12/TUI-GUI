@@ -34,19 +34,27 @@ class ScrollTextbox(Textbox):
         # print character
         if curses.ascii.isprint(ch):
             self.toggle_save_needed(True)
-            if x > len(self.text[self.line_num]):
+            if self.line_num > len(self.text) - 1:
+                for line_num in range(len(self.text),self.line_num+1):
+                    self.text.append("")
+            if x > len(self.text[self.line_num]) - 1:
                 self.text[self.line_num] += " " * (x - len(self.text[self.line_num]))
             self.text[self.line_num] += chr(ch)
             if x == self.maxx:
                 if y == self.maxy:
                     self.win.scroll(1)
+                    self.top_line_num += 1
                     self.win.move(y-1, x)
                 self._insert_printable_char(ch)
                 self.line_num += 1
+                if self.line_num > len(self.text) - 1:
+                    self.text.append("")
+                self.text[self.line_num] = self.text[self.line_num][:x] + chr(ch) + self.text[self.line_num][x+1:]
                 if self.line_num < len(self.text):
                     self.win.insstr(self.text[self.line_num])
             else:
                 self._insert_printable_char(ch)
+                self.text[self.line_num] = self.text[self.line_num][:x] + chr(ch) + self.text[self.line_num][x+1:]
         # Ctrl-a (Go to left edge of window)
         elif ch == curses.ascii.SOH:                           # ^a
             self.win.move(y, 0)
@@ -96,8 +104,6 @@ class ScrollTextbox(Textbox):
             else:
                 self.win.move(y+1, 0)
                 self.line_num += 1
-            if self.line_num > len(self.text) - 1:
-                self.text.append("")
         # Ctrl-g (Terminate, returning the window contents)
         elif ch == curses.ascii.BEL:                           # ^g
             return 0           # return zero
@@ -223,11 +229,18 @@ class Buffer():
 class Buffers():
     def __init__(self, stdscr):
         "Initialize the Application"
+        ### start of buffers setup ###
         self.screen = stdscr
+        self.screen.clear()
+        # initialize first buffer
         self.cmd = 'edit'
-        self.buffers = [Buffer(stdscr)]
+        self.buffers = [Buffer(self.screen)]
         self.buffer_num = 0
         self.current_buffer = self.buffers[0]
+        # update the buffer
+        self.update_buffer()
+        self.update_statusline("Help buffer: 'Ctrl-G'+'h'+<Enter>")
+        ### end buffers setup ###
 
     def add_buffer(self):
         "Add a buffer"
@@ -324,50 +337,38 @@ class Buffers():
         # return nothing
         return
 
-
     def remove_buffer(self):
-        "Remove current buffer to have -1 buffers or quit"
-        # if more than one buffer...
-        if len(self.buffers) > 1:
-            # if the buffer has unsaved work, ask about removing
-            if self.current_buffer.text_box.save_needed:
-                self.update_statusline('Unsaved work. Remove buffer [y/N]?')
-                # get user's choice
-                self.get_cmd()
-                if 'y' in self.cmd: # if user entered yes, remove buffer
-                    self.del_buffer()
-            else: # else buffer has no unsaved work, safe to remove
+        "Remove current buffer to have one less buffer"
+        # if the buffer has unsaved work, ask about removing
+        if self.current_buffer.text_box.save_needed:
+            self.update_statusline('Unsaved work. Remove buffer [y/N]?')
+            # get user's choice
+            self.get_cmd()
+            if 'y' in self.cmd: # if user entered yes, remove buffer
                 self.del_buffer()
-        else: # else if only buffer...
-            # if unsaved work, ask
-            if self.current_buffer.text_box.save_needed:
-                self.update_statusline('Unsaved work. Quit [y/N]?')
-                # get user's choice
-                self.get_cmd()
-                if 'y' in self.cmd: # if user entered yes, quit
-                    curses.endwin()
-                    exit()
-            else: # else no unsaved work, quit
-                curses.endwin()
-                exit()
+        else: # else buffer has no unsaved work, safe to remove
+            self.del_buffer()
         # return nothing
         return
 
+    def maybe_quit(self):
+        "If a save is needed, save then quit"
+        # Check for unsaved work, and ask
+        for b,buff in enumerate(self.buffers):
+            if buff.text_box.save_needed:
+                self.update_buffer(b)
+                self.update_statusline('Unsaved work. Quit [y/N]?')
+                # get user's choice
+                self.get_cmd()
+                if 'n' in self.cmd: # if user entered no, edit text box
+                    self.cmd = "edit"
+                # break out of for loop no matter the choice
+                break
+        # return nothing
+        return
 
     def mainloop(self):
         "Main program loop"
-
-        ### start of buffers setup ###
-        self.screen.clear()
-        # update buffer
-        self.update_buffer()
-        self.update_statusline("Help buffer: 'Ctrl-G'+'h'+<Enter>")
-        ### end buffers setup ###
-
-        ### start of program while loop ###
-        # to start, edit default text box
-        self.cmd = 'edit'
-
         # while cmd is not 'quit' execute while loop
         while self.cmd != 'q' and self.cmd != 'quit' and self.cmd != 'exit':
             # get info
@@ -410,11 +411,7 @@ class Buffers():
 "'f[ile ]o[pen]' = open file",
 "'o[pen buffers]' = list open buffers in new buffer"]
                 # display help text
-                t_box.win.move(0, 0)
-                for l,line in enumerate(t_box.text):
-                    t_box.win.insstr(l, 0, line)
-                    if l == t_box.win.getmaxyx()[0]:
-                        break
+                self.update_buffer()
                 # edit the text box
                 self.edit_default_text_box()
 
@@ -438,11 +435,7 @@ class Buffers():
                     else:
                         t_box.text.append("  Buffer "+str(b))
                 # display text box text
-                t_box.win.move(0, 0)
-                for lnum,line_of_text in enumerate(t_box.text):
-                    t_box.win.insstr(lnum, 0, line_of_text)
-                    if lnum == t_box.win.getmaxyx()[0]:
-                        break
+                self.update_buffer()
                 # edit the text box
                 self.edit_default_text_box()
 
@@ -462,12 +455,11 @@ class Buffers():
 
             # COMMAND: remove buffer
             elif self.cmd == 'r' or self.cmd == 'remove' or self.cmd == 'remove buffer':
-                self.remove_buffer()
-                # if at least one buffer left, edit default buffer text box
-                if len(self.buffers) > 0:
+                # if more than one buffer left, remove
+                if len(self.buffers) > 1:
+                    self.remove_buffer()
                     self.edit_default_text_box()
-                else: # else end program
-                    # break out of while loop to end program
+                else: # else break out of while loop to save and quit, or not
                     break
 
 
@@ -546,6 +538,8 @@ class Buffers():
                     del text_from_file
 
                     # update buffer for displaying the text
+                    self.current_buffer.text_box.line_num = 0
+                    self.current_buffer.text_box.top_line_num = 0
                     self.update_buffer()
 
                 # edit default text box
@@ -560,12 +554,11 @@ class Buffers():
             ### end of program while loop ###
 
 
-        # Check for unsaved work, and maybe quit
-        for b,buff in enumerate(self.buffers):
-            self.update_buffer(b)
-            self.remove_buffer()
-        # if still open buffers, enter mainloop
-        self.mainloop()
+        # check for unsaved work, and possibly quit
+        self.maybe_quit()
+        # if need to save, enter mainloop
+        if "edit" in self.cmd:
+            self.mainloop()
         # return nothing
         return
 
