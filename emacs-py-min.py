@@ -7,10 +7,36 @@ from curses.textpad import Textbox
 from time import sleep
 
 
-class ScrollTextbox(Textbox):
-    def __init__(self, win, insert_mode=False):
-        super().__init__(win, insert_mode)
-        self.win.idcok(True)
+class ScrollTextbox():
+    """Editing widget using the interior of a window object.
+     Supports the following Emacs-like key bindings:
+
+    Ctrl-A      Go to left edge of window.
+    Ctrl-B      Cursor left, wrapping to previous line if appropriate.
+    Ctrl-D      Delete character under cursor.
+    Ctrl-E      Go to right edge (stripspaces off) or end of line (stripspaces on).
+    Ctrl-F      Cursor right, wrapping to next line when appropriate.
+    Ctrl-G      Terminate, returning the window contents.
+    Ctrl-H      Delete character backward.
+    Ctrl-J      Terminate if the window is 1 line, otherwise insert newline.
+    Ctrl-K      If line is blank, delete it, otherwise clear to end of line.
+    Ctrl-L      Refresh screen.
+    Ctrl-N      Cursor down; move down one line.
+    Ctrl-O      Insert a blank line at cursor location.
+    Ctrl-P      Cursor up; move up one line.
+
+    Move operations do nothing if the cursor is at an edge where the movement
+    is not possible.  The following synonyms are supported where possible:
+
+    KEY_LEFT = Ctrl-B, KEY_RIGHT = Ctrl-F, KEY_UP = Ctrl-P, KEY_DOWN = Ctrl-N
+    KEY_BACKSPACE = Ctrl-h
+    """
+
+    def __init__(self, win):
+        """Initialize the object"""
+        self.win = win
+        self.lastcmd = None
+        win.keypad(1)
         self.win.idlok(True)
         self.win.scrollok(True)
         self.stripspaces = True
@@ -19,16 +45,65 @@ class ScrollTextbox(Textbox):
         self.x_indx = [1]
         self.text = [""]
         self.save_needed = False
+        self._update_max_yx()
 
     def toggle_save_needed(self, bool):
-        "Set save_needed bool"
+        """Set save_needed bool"""
         self.save_needed = bool
         # return nothing
         return
 
+    def _update_max_yx(self):
+        """Update object's window dimensions"""
+        maxy, maxx = self.win.getmaxyx()
+        self.maxy = maxy - 1
+        self.maxx = maxx - 1
+
+    def _end_of_line(self, y):
+        """Go to the location of the first blank on the given line,
+        returning the index of the last non-blank character."""
+        self._update_max_yx()
+        last = self.maxx
+        while True:
+            if curses.ascii.ascii(self.win.inch(y, last)) != curses.ascii.SP:
+                last = min(self.maxx, last+1)
+                break
+            elif last == 0:
+                break
+            last = last - 1
+        return last
+
+    def _insert_printable_char(self, ch):
+        """Insert a printable character into the window"""
+        self._update_max_yx()
+        (y, x) = self.win.getyx()
+        try:
+            self.win.addch(ch)
+        except curses.error:
+            pass
+        (y, x) = self.win.getyx()
+        # return nothing
+        return
+
+    def _toggle_brackets(self, cmd="", bracket=""):
+        """Toggle the brackets at each end of the window"""
+        if len(cmd) == 0 or cmd == "normal":
+            if bracket == ">":
+                self.win.addch(self.win.getyx()[0], self.maxx, ' ', A_NORMAL)
+            elif bracket == "<"
+                self.win.addch(self.win.getyx()[0], 0, ' ', A_NORMAL)
+        elif cmd == "reverse":
+            if bracket == ">":
+                self.win.addch(self.win.getyx()[0], self.maxx, '>', A_REVERSE)
+            if bracket == "<":
+                self.win.addch(self.win.getyx()[0], 0, '<', A_REVERSE)
+        # return nothing
+        return
+
+
     # overwrite Textbox do_command for scrolling
     def do_command(self, ch):
-        "Process a single editing command."
+        """Process a single editing command."""
         self._update_max_yx()
         (y, x) = self.win.getyx()
         self.lastcmd = ch
@@ -43,9 +118,9 @@ class ScrollTextbox(Textbox):
             if x == self.maxx:
                 self.win.addch(y, 0, '<', A_REVERSE)
                 self.x_indx[self.line_num] += 1
-                self.win.addstr(y, 0, self.text[self.line_num][self.x_indx[self.line_num]*maxx:self.x_indx[self.line_num]*maxx+maxx])
-                if len(self.text[self.line_num]) > (self.x_indx[self.line_num]*maxx + maxx - 1):
-                    self.win.addch(y, maxx, '>', A_REVERSE)
+                self.win.addstr(y, 0, self.text[self.line_num][self.x_indx[self.line_num]*self.maxx:self.x_indx[self.line_num]*self.maxx+self.maxx])
+                if len(self.text[self.line_num]) > (self.x_indx[self.line_num]*self.maxx + self.maxx - 1):
+                    self.win.addch(y, self.maxx, '>', A_REVERSE)
                 self.win.addch(y, 0, '<', A_REVERSE)
                 self.win.move(y, 1)
             self._insert_printable_char(ch)
@@ -55,8 +130,8 @@ class ScrollTextbox(Textbox):
             self.x_index[self.line_num] = 1
             self.win.move(y, 0)
             self.win.addstr(self.text[self.line_num])
-            if len(self.text[self.line_num]) > maxx:
-                self.win.addch(y, maxx, '>', A_REVERSE)
+            if len(self.text[self.line_num]) > self.maxx:
+                self.win.addch(y, self.maxx, '>', A_REVERSE)
         # Ctrl-b (Cursor left, wrapping to previous line if appropriate (backspace doesn't work))
         elif ch in (curses.ascii.STX, curses.KEY_LEFT, curses.ascii.BS, curses.KEY_BACKSPACE):     # ^b
             if x > 0 and self.x_indx[self.line_num] == 1:
@@ -66,12 +141,12 @@ class ScrollTextbox(Textbox):
                     self.win.move(y, x-1)
                 else:
                     self.x_indx[self.line_num] -= 1
-                    self.win.addstr(y, 0, self.text[self.line_num][self.x_indx*maxx:self.x_indx*maxx+maxx])
-                    if len(self.text[self.line_num]) > (maxx - 1):
-                        self.win.addch(y, maxx, '>', A_REVERSE)
-                        self.win.move(y, maxx-1)
+                    self.win.addstr(y, 0, self.text[self.line_num][self.x_indx*self.maxx:self.x_indx*self.maxx+self.maxx])
+                    if len(self.text[self.line_num]) > (self.maxx - 1):
+                        self.win.addch(y, self.maxx, '>', A_REVERSE)
+                        self.win.move(y, self.maxx-1)
                     else:
-                        self.win.move(y, maxx)
+                        self.win.move(y, self.maxx)
                     if self.x_indx[self.line_num] > 1:
                         self.win.addch(y, 0, '<', A_REVERSE)
             elif y == 0:
@@ -81,9 +156,9 @@ class ScrollTextbox(Textbox):
                     self.top_line_num -= 1
                     self.win.move(y, 0)
                     self.win.addstr(self.text[self.line_num])
-                    if len(self.text[self.line_num]) > (maxx - 1):
-                        self.win.addch(y, maxx, '>', A_REVERSE)
-                        self.win.move(y, maxx-1)
+                    if len(self.text[self.line_num]) > (self.maxx - 1):
+                        self.win.addch(y, self.maxx, '>', A_REVERSE)
+                        self.win.move(y, self.maxx-1)
                     else:
                         self.win.move(y, len(self.text[self.line_num]))
             #elif self.stripspaces:
@@ -100,9 +175,9 @@ class ScrollTextbox(Textbox):
             self.toggle_save_needed(True)
             self.win.delch()
             self.text[self.line_num] = self.text[self.line_num][:x] + self.text[self.line_num][x+1:]
-            if len(self.text[self.line_num][self.x_indx*maxx:]) < maxx:
-                self.win.chgat(y, maxx, A_NORMAL)
-                self.win.addch(y, maxx, ' ')
+            if len(self.text[self.line_num][self.x_indx*self.maxx:]) < self.maxx:
+                self.win.chgat(y, self.maxx, A_NORMAL)
+                self.win.addch(y, self.maxx, ' ')
         # Ctrl-e (Go to right edge (stripspaces off) or end of line (stripspaces on))
         elif ch == curses.ascii.ENQ:                           # ^e
             #if self.stripspaces:
@@ -205,12 +280,10 @@ class ScrollTextbox(Textbox):
         # return one
         return 1
 
-    def edit(self, stdscr, buffer_num, validate=None):
-        "Edit in the widget window and collect the results."
+    def edit(self, stdscr, buffer_num):
+        """Edit in the widget window"""
         while 1:
             ch = self.win.getch()
-            if validate:
-                ch = validate(ch)
             if not ch:
                 continue
             if not self.do_command(ch):
@@ -225,13 +298,13 @@ class ScrollTextbox(Textbox):
             stdscr.refresh()
             # need to refresh win after screen for cursor to appear in win
             self.win.refresh()
-        # return text box contents
-        return self.gather()
+        # return nothing
+        return
 
 
 class Buffer():
     def __init__(self, stdscr):
-        "Create new buffer for editing to have +1 buffers"
+        """Create new buffer for editing"""
         # get screen dimensions
         maxy, maxx = stdscr.getmaxyx()
         # setup text box
@@ -241,7 +314,7 @@ class Buffer():
 
 class Buffers():
     def __init__(self, stdscr):
-        "Initialize the Application"
+        """Initialize the Application"""
         ### start of buffers setup ###
         self.screen = stdscr
         self.screen.clear()
@@ -262,7 +335,7 @@ class Buffers():
         ### end buffers setup ###
 
     def add_buffer(self):
-        "Add a buffer"
+        """Add a buffer"""
         self.buffers.append(Buffer(self.screen))
         self.buffer_num = len(self.buffers) - 1
         self.current_buffer = self.buffers[-1]
@@ -270,7 +343,7 @@ class Buffers():
         return
 
     def get_cmd(self):
-        "Get a command from commandline"
+        """Get a command from commandline"""
         self.cmd_box.win.clear()
         self.cmd_box.win.refresh()
         self.cmd = self.cmd_box.edit().strip(' ').lower()
@@ -278,7 +351,7 @@ class Buffers():
         return
 
     def update_statusline(self, status):
-        "Update the statusline"
+        """Update the statusline"""
         t_box = self.current_buffer.text_box
         s_maxy, s_maxx = self.screen.getmaxyx()
         # statuline string
@@ -295,7 +368,7 @@ class Buffers():
         return
 
     def update_text(self):
-        "Redisplay text box text"
+        """Redisplay text box text"""
         t_box = self.current_buffer.text_box
         # display text
         t_box.win.move(0, 0)
@@ -321,7 +394,7 @@ class Buffers():
         return
 
     def update_buffer(self, buffer_num=-1):
-        "Redraw the buffer"
+        """Redraw the buffer"""
         if buffer_num > -1: # if buffer number is not -1, update the buffer number and current buffer
             # Update the buffer number
             self.buffer_num = buffer_num
@@ -335,7 +408,7 @@ class Buffers():
         return
 
     def edit_default_text_box(self):
-        "Edit default text box"
+        """Edit default text box"""
         text_box = self.current_buffer.text_box
         # move cursor to top left corner
         text_box.line_num = text_box.top_line_num
@@ -345,7 +418,7 @@ class Buffers():
         return text_box.edit(self.screen, self.buffer_num)
 
     def del_buffer(self):
-        "Delete current buffer and update buffer number (and current buffer)"
+        """Delete current buffer and update buffer number (and current buffer)"""
         # remove buffer and associated objects
         self.screen.clear()
         self.screen.refresh()
@@ -359,7 +432,7 @@ class Buffers():
         return
 
     def remove_buffer(self):
-        "Remove current buffer to have one less buffer"
+        """Remove current buffer to have one less buffer"""
         # if the buffer has unsaved work, ask about removing
         if self.current_buffer.text_box.save_needed:
             self.update_statusline('Unsaved work. Remove buffer [y/N]?')
@@ -373,7 +446,7 @@ class Buffers():
         return
 
     def maybe_quit(self):
-        "If a save is needed, save then quit"
+        """If a save is needed, save then quit"""
         # Check for unsaved work, and ask
         for b,buff in enumerate(self.buffers):
             if buff.text_box.save_needed:
@@ -389,7 +462,7 @@ class Buffers():
         return
 
     def mainloop(self):
-        "Main program loop"
+        """Main program loop"""
         # while cmd is not 'quit' execute while loop
         while self.cmd != 'q' and self.cmd != 'quit' and self.cmd != 'exit':
             # get info
@@ -586,7 +659,7 @@ class Buffers():
 
 
 def main(stdscr):
-    "The Main Program"
+    """The Main Program"""
     ### Initialize Emacs ###
     emacs = Buffers(stdscr)
     ### MAIN PROGRAM ###
