@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import curses
-from curses import wrapper, window
+from curses import wrapper, window, A_REVERSE, A_NORMAL
 from curses.textpad import Textbox
 
 from time import sleep
@@ -16,6 +16,7 @@ class ScrollTextbox(Textbox):
         self.stripspaces = True
         self.line_num = 0
         self.top_line_num = 0
+        self.x_indx = [1]
         self.text = [""]
         self.save_needed = False
 
@@ -39,42 +40,57 @@ class ScrollTextbox(Textbox):
                     self.text.append("")
             if x > len(self.text[self.line_num]) - 1:
                 self.text[self.line_num] += " " * (x - len(self.text[self.line_num]))
-            self.text[self.line_num] += chr(ch)
             if x == self.maxx:
-                if y == self.maxy:
-                    self.win.scroll(1)
-                    self.top_line_num += 1
-                    self.win.move(y-1, x)
-                self._insert_printable_char(ch)
-                self.line_num += 1
-                if self.line_num > len(self.text) - 1:
-                    self.text.append("")
-                self.text[self.line_num] = self.text[self.line_num][:x] + chr(ch) + self.text[self.line_num][x+1:]
-                if self.line_num < len(self.text):
-                    self.win.insstr(self.text[self.line_num])
-            else:
-                self._insert_printable_char(ch)
-                self.text[self.line_num] = self.text[self.line_num][:x] + chr(ch) + self.text[self.line_num][x+1:]
+                self.win.addch(y, 0, '<', A_REVERSE)
+                self.x_indx[self.line_num] += 1
+                self.win.addstr(y, 0, self.text[self.line_num][self.x_indx[self.line_num]*maxx:self.x_indx[self.line_num]*maxx+maxx])
+                if len(self.text[self.line_num]) > (self.x_indx[self.line_num]*maxx + maxx - 1):
+                    self.win.addch(y, maxx, '>', A_REVERSE)
+                self.win.addch(y, 0, '<', A_REVERSE)
+                self.win.move(y, 1)
+            self._insert_printable_char(ch)
+            self.text[self.line_num] = self.text[self.line_num][:x] + chr(ch) + self.text[self.line_num][x+1:]
         # Ctrl-a (Go to left edge of window)
         elif ch == curses.ascii.SOH:                           # ^a
+            self.x_index[self.line_num] = 1
             self.win.move(y, 0)
+            self.win.addstr(self.text[self.line_num])
+            if len(self.text[self.line_num]) > maxx:
+                self.win.addch(y, maxx, '>', A_REVERSE)
         # Ctrl-b (Cursor left, wrapping to previous line if appropriate (backspace doesn't work))
         elif ch in (curses.ascii.STX, curses.KEY_LEFT, curses.ascii.BS, curses.KEY_BACKSPACE):     # ^b
-            if x > 0:
+            if x > 0 and self.x_indx[self.line_num] == 1:
                 self.win.move(y, x-1)
+            elif self.x_indx[self.line_num] > 1:
+                if x > 1:
+                    self.win.move(y, x-1)
+                else:
+                    self.x_indx[self.line_num] -= 1
+                    self.win.addstr(y, 0, self.text[self.line_num][self.x_indx*maxx:self.x_indx*maxx+maxx])
+                    if len(self.text[self.line_num]) > (maxx - 1):
+                        self.win.addch(y, maxx, '>', A_REVERSE)
+                        self.win.move(y, maxx-1)
+                    else:
+                        self.win.move(y, maxx)
+                    if self.x_indx[self.line_num] > 1:
+                        self.win.addch(y, 0, '<', A_REVERSE)
             elif y == 0:
                 if self.line_num > 0:
                     self.win.scroll(-1)
                     self.line_num -= 1
                     self.top_line_num -= 1
                     self.win.move(y, 0)
-                    self.win.insstr(self.text[self.line_num])
-                    self.win.move(y, len(self.text[self.line_num]))
-            elif self.stripspaces:
-                self.win.move(y-1, self._end_of_line(y-1))
-                self.line_num -= 1
+                    self.win.addstr(self.text[self.line_num])
+                    if len(self.text[self.line_num]) > (maxx - 1):
+                        self.win.addch(y, maxx, '>', A_REVERSE)
+                        self.win.move(y, maxx-1)
+                    else:
+                        self.win.move(y, len(self.text[self.line_num]))
+            #elif self.stripspaces:
+            #    self.win.move(y-1, self._end_of_line(y-1))
+            #    self.line_num -= 1
             else:
-                self.win.move(y-1, self.maxx)
+                self.win.move(y-1, 0)
                 self.line_num -= 1
             if ch in (curses.ascii.BS, curses.KEY_BACKSPACE):
                 self.win.delch()
@@ -84,12 +100,16 @@ class ScrollTextbox(Textbox):
             self.toggle_save_needed(True)
             self.win.delch()
             self.text[self.line_num] = self.text[self.line_num][:x] + self.text[self.line_num][x+1:]
+            if len(self.text[self.line_num][self.x_indx*maxx:]) < maxx:
+                self.win.chgat(y, maxx, A_NORMAL)
+                self.win.addch(y, maxx, ' ')
         # Ctrl-e (Go to right edge (stripspaces off) or end of line (stripspaces on))
         elif ch == curses.ascii.ENQ:                           # ^e
-            if self.stripspaces:
-                self.win.move(y, self._end_of_line(y))
-            else:
-                self.win.move(y, self.maxx)
+            #if self.stripspaces:
+            #    self.win.move(y, self._end_of_line(y))
+            #else:
+            #    self.win.move(y, self.maxx)
+            self.win.move(y, self.maxx)
         # Ctrl-f (Cursor right, wrapping to next line when appropriate)
         elif ch in (curses.ascii.ACK, curses.KEY_RIGHT):       # ^f
             if x < self.maxx:
@@ -286,8 +306,10 @@ class Buffers():
         else:
             maxline = minline + len(t_box.text)
         for line in t_box.text[minline:maxline+1]:
-            y, x = t_box.win.getyx()
-            t_box.win.insstr(line)
+            y = t_box.win.getyx()[0]
+            t_box.win.insnstr(line, maxx)
+            if len(line) > maxx:
+                t_box.win.insch(y, maxx, '>', A_REVERSE)
             if y == maxy - 1:
                 break
             else:
