@@ -174,6 +174,29 @@ class ScrollTextbox(Textbox):
         # return one
         return 1
 
+    def edit(self, stdscr, buffer_num, validate=None):
+        "Edit in the widget window and collect the results."
+        while 1:
+            ch = self.win.getch()
+            if validate:
+                ch = validate(ch)
+            if not ch:
+                continue
+            if not self.do_command(ch):
+                break
+            # update statusline (y, x)
+            s_maxy, s_maxx = stdscr.getmaxyx()
+            # statuline string
+            statusline = '### Buffer '+ str(buffer_num) + ' ' + '# Row ' + str(self.line_num) + ' Col ' + str(self.win.getyx()[1]) + ' '
+            # redraw bottom hline (statusline)
+            stdscr.insstr(s_maxy-2, 0, statusline)
+            stdscr.hline(s_maxy-2, len(statusline) , '#', s_maxx-len(statusline))
+            stdscr.refresh()
+            # need to refresh win after screen for cursor to appear in win
+            self.win.refresh()
+        # return text box contents
+        return self.gather()
+
 
 class Buffer():
     def __init__(self, stdscr):
@@ -219,13 +242,13 @@ class Buffers():
 
     def update_statusline(self, status):
         "Update the statusline"
-        current_buffer = self.current_buffer
+        t_box = self.current_buffer.text_box
         s_maxy, s_maxx = self.screen.getmaxyx()
         # statuline string
         if len(status) > 0:
             statusline = '### ' + status + ' '
         else:
-            statusline = '### Buffer '+ str(self.buffer_num) + ' ' + '# Row ' + str(current_buffer.text_box.line_num) + ' Col ' + str(current_buffer.text_box.win.getyx()[1]) + ' '
+            statusline = '### Buffer '+ str(self.buffer_num) + ' ' + '# Row ' + str(t_box.line_num) + ' Col ' + str(t_box.win.getyx()[1]) + ' '
         # redraw bottom hline (statusline)
         self.screen.insstr(s_maxy-2, 0, statusline)
         self.screen.hline(s_maxy-2, len(statusline) , '#', s_maxx-len(statusline))
@@ -278,8 +301,9 @@ class Buffers():
         # move cursor to top left corner
         text_box.line_num = text_box.top_line_num
         text_box.win.move(0, 0)
+        self.update_statusline("")
         # edit text box
-        return text_box.edit()
+        return text_box.edit(self.screen, self.buffer_num)
 
     def del_buffer(self):
         "Delete current buffer and update buffer number (and current buffer)"
@@ -338,6 +362,8 @@ class Buffers():
         ### start of program while loop ###
         # to start, edit default text box
         self.cmd = 'edit'
+
+        # while cmd is not 'quit' execute while loop
         while self.cmd != 'q' and self.cmd != 'quit' and self.cmd != 'exit':
             # get info
             buffer = self.current_buffer
@@ -377,8 +403,7 @@ class Buffers():
 "'b[uffer]' = go to next buffer",
 "'f[ile ]s[ave[ as]]' = save to file",
 "'f[ile ]o[pen]' = open file",
-"'o[pen buffers]' = list open buffers in new buffer"
-]
+"'o[pen buffers]' = list open buffers in new buffer"]
                 # display help text
                 t_box.win.move(0, 0)
                 for l,line in enumerate(t_box.text):
@@ -400,8 +425,7 @@ class Buffers():
 "==========  Open buffer Buffers  ==========",
 " Warning: This buffer will not auto update ",
 "      Recommended to remove when done      ",
-"==========================================="
-]
+"==========================================="]
                 # get open buffers
                 for b,buff in enumerate(self.buffers):
                     if b == len(self.buffers) - 1:
@@ -543,6 +567,7 @@ class Buffers():
 
 def main(stdscr):
     "The Main Program"
+    ### Initialize Emacs ###
     emacs = Buffers(stdscr)
     ### MAIN PROGRAM ###
     emacs.mainloop()
