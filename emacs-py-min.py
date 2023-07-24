@@ -41,7 +41,6 @@ class ScrollTextbox():
         win.keypad(1)
         self.win.idlok(True)
         self.win.scrollok(True)
-        self.stripspaces = True
         self.line_num = 0
         self.top_line_num = 0
         self.x_indx = [1]
