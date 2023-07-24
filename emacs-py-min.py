@@ -61,20 +61,6 @@ class ScrollTextbox():
         self.maxy = maxy - 1
         self.maxx = maxx - 1
 
-    def _end_of_line(self, y):
-        """Go to the location of the first blank on the given line,
-        returning the index of the last non-blank character."""
-        self._update_max_yx()
-        last = self.maxx
-        while True:
-            if curses.ascii.ascii(self.win.inch(y, last)) != curses.ascii.SP:
-                last = min(self.maxx, last+1)
-                break
-            elif last == 0:
-                break
-            last = last - 1
-        return last
-
     def _insert_printable_char(self, ch):
         """Insert a printable character into the window"""
         self._update_max_yx()
@@ -167,9 +153,6 @@ class ScrollTextbox():
                         self.win.move(y, self.maxx-1)
                     else:
                         self.win.move(y, len(self.text[self.line_num]))
-            #elif self.stripspaces:
-            #    self.win.move(y-1, self._end_of_line(y-1))
-            #    self.line_num -= 1
             else:
                 self.win.move(y-1, 0)
                 self.line_num -= 1
@@ -239,12 +222,8 @@ class ScrollTextbox():
         # Ctrl-k (If line is blank, delete it, otherwise clear to end of line)
         elif ch == curses.ascii.VT:                            # ^k
             self.toggle_save_needed(True)
-            if x == 0 and self._end_of_line(y) == 0:
-                self.win.deleteln()
-            else:
-                # first undo the effect of self._end_of_line
-                self.win.move(y, x)
-                self.win.clrtoeol()
+            self.win.move(y, 0)
+            self.win.deleteln()
             self.text[self.line_num] = ""
             self.x_indx[self.line_num] = 1
 
