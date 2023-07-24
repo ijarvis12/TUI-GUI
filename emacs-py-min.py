@@ -182,16 +182,16 @@ class ScrollTextbox():
             if x == self.maxx-1 and len(self.text[self.line_num]) > self.x_indx[self.line_num]*self.maxx:
                 x_coord = self.x_indx[self.line_num]*self.maxx
                 self.win.addstr(y, 1, self.text[self.line_num][x_coord:])
-                self.win._toggle_brackets("reverse", "<")
+                self._toggle_brackets("reverse", "<")
             elif x < self.maxx:
                 self.win.move(y, x+1)
-            elif y == self.maxy:
+            elif y == self.maxy and len(self.text[self.line_num]) < self.x_indx[self.line_num]*self.maxx:
                 self.win.scroll(1)
                 self.line_num += 1
                 self.top_line_num += 1
                 self.win.move(y, 0)
                 if self.line_num < len(self.text):
-                    self.win.insstr(self.text[self.line_num])
+                    self.win.addstr(self.text[self.line_num])
             else:
                 self.win.move(y+1, 0)
                 self.line_num += 1
@@ -239,7 +239,7 @@ class ScrollTextbox():
                 self.top_line_num += 1
                 self.win.move(y, 0)
                 if self.line_num < len(self.text):
-                    self.win.insstr(self.text[self.line_num])
+                    self.win.addstr(self.text[self.line_num])
                 else:
                     self.toggle_save_needed(True)
                     self.text.append("")
@@ -250,6 +250,7 @@ class ScrollTextbox():
                 self.line_num += 1
                 # sanity check #
                 if self.line_num > len(self.text) - 1:
+                    self.toggle_save_needed(True)
                     for i in range(len(self.text),self.line_num+1):
                         self.text.append("")
                         self.x_indx.append(1)
@@ -279,7 +280,7 @@ class ScrollTextbox():
                 self.line_num -= 1
                 self.top_line_num -= 1
                 self.win.move(y, 0)
-                self.win.insstr(self.text[self.line_num])
+                self.win.addstr(self.text[self.line_num])
                 self.win.move(y, x)
             if x > len(self.text[self.line_num]):
                 self.win.move(y-1, len(self.text[self.line_num]))
@@ -301,7 +302,7 @@ class ScrollTextbox():
             # statuline string
             statusline = '### Buffer '+ str(buffer_num) + ' ' + '# Row ' + str(self.line_num) + ' Col ' + str(self.win.getyx()[1]) + ' '
             # redraw bottom hline (statusline)
-            stdscr.insstr(s_maxy-2, 0, statusline)
+            stdscr.addstr(s_maxy-2, 0, statusline)
             stdscr.hline(s_maxy-2, len(statusline) , '#', s_maxx-len(statusline))
             stdscr.refresh()
             # need to refresh win after screen for cursor to appear in win
@@ -368,7 +369,7 @@ class Buffers():
         else:
             statusline = '### Buffer '+ str(self.buffer_num) + ' ' + '# Row ' + str(t_box.line_num) + ' Col ' + str(t_box.win.getyx()[1]) + ' '
         # redraw bottom hline (statusline)
-        self.screen.insstr(s_maxy-2, 0, statusline)
+        self.screen.addstr(s_maxy-2, 0, statusline)
         self.screen.hline(s_maxy-2, len(statusline) , '#', s_maxx-len(statusline))
         self.screen.refresh()
 
