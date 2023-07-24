@@ -35,7 +35,6 @@ class ScrollTextbox():
     def __init__(self, win):
         """Initialize the object"""
         self.win = win
-        self.lastcmd = None
         win.keypad(1)
         self.win.idlok(True)
         self.win.scrollok(True)
@@ -90,7 +89,7 @@ class ScrollTextbox():
         if len(cmd) == 0 or cmd == "normal":
             if bracket == ">":
                 self.win.addch(self.win.getyx()[0], self.maxx, ' ', A_NORMAL)
-            elif bracket == "<"
+            elif bracket == "<":
                 self.win.addch(self.win.getyx()[0], 0, ' ', A_NORMAL)
         elif cmd == "reverse":
             if bracket == ">":
@@ -106,32 +105,32 @@ class ScrollTextbox():
         """Process a single editing command."""
         self._update_max_yx()
         (y, x) = self.win.getyx()
-        self.lastcmd = ch
         # print character
         if curses.ascii.isprint(ch):
             self.toggle_save_needed(True)
             if self.line_num > len(self.text) - 1:
                 for line_num in range(len(self.text),self.line_num+1):
                     self.text.append("")
+                    self.x_indx.append(1)
             if x > len(self.text[self.line_num]) - 1:
                 self.text[self.line_num] += " " * (x - len(self.text[self.line_num]))
             if x == self.maxx:
-                self.win.addch(y, 0, '<', A_REVERSE)
                 self.x_indx[self.line_num] += 1
-                self.win.addstr(y, 0, self.text[self.line_num][self.x_indx[self.line_num]*self.maxx:self.x_indx[self.line_num]*self.maxx+self.maxx])
+                self._toggle_brackets("reverse", "<")
+                self.win.addstr(y, 1, self.text[self.line_num][self.x_indx[self.line_num]*self.maxx:])
                 if len(self.text[self.line_num]) > (self.x_indx[self.line_num]*self.maxx + self.maxx - 1):
-                    self.win.addch(y, self.maxx, '>', A_REVERSE)
-                self.win.addch(y, 0, '<', A_REVERSE)
+                    self._toggle_brackets("reverse", ">")
                 self.win.move(y, 1)
             self._insert_printable_char(ch)
-            self.text[self.line_num] = self.text[self.line_num][:x] + chr(ch) + self.text[self.line_num][x+1:]
+            x_coord = self.x_indx[self.line_num]*self.maxx
+            self.text[self.line_num] = self.text[self.line_num][:x_coord+x] + chr(ch) + self.text[self.line_num][x_coord+x+1:]
         # Ctrl-a (Go to left edge of window)
         elif ch == curses.ascii.SOH:                           # ^a
-            self.x_index[self.line_num] = 1
+            self.x_indx[self.line_num] = 1
             self.win.move(y, 0)
             self.win.addstr(self.text[self.line_num])
             if len(self.text[self.line_num]) > self.maxx:
-                self.win.addch(y, self.maxx, '>', A_REVERSE)
+                self._toggle_brackets("reverse", ">")
         # Ctrl-b (Cursor left, wrapping to previous line if appropriate (backspace doesn't work))
         elif ch in (curses.ascii.STX, curses.KEY_LEFT, curses.ascii.BS, curses.KEY_BACKSPACE):     # ^b
             if x > 0 and self.x_indx[self.line_num] == 1:
@@ -141,14 +140,15 @@ class ScrollTextbox():
                     self.win.move(y, x-1)
                 else:
                     self.x_indx[self.line_num] -= 1
-                    self.win.addstr(y, 0, self.text[self.line_num][self.x_indx*self.maxx:self.x_indx*self.maxx+self.maxx])
+                    x_coord = (self.x_indx[self.line_num]-1)*self.maxx
+                    self.win.addstr(y, 0, self.text[self.line_num][x_coord:])
                     if len(self.text[self.line_num]) > (self.maxx - 1):
-                        self.win.addch(y, self.maxx, '>', A_REVERSE)
+                        self._toggle_brackets("reverse", ">")
                         self.win.move(y, self.maxx-1)
                     else:
                         self.win.move(y, self.maxx)
                     if self.x_indx[self.line_num] > 1:
-                        self.win.addch(y, 0, '<', A_REVERSE)
+                        self._toggle_brackets("reverse", "<")
             elif y == 0:
                 if self.line_num > 0:
                     self.win.scroll(-1)
@@ -157,7 +157,7 @@ class ScrollTextbox():
                     self.win.move(y, 0)
                     self.win.addstr(self.text[self.line_num])
                     if len(self.text[self.line_num]) > (self.maxx - 1):
-                        self.win.addch(y, self.maxx, '>', A_REVERSE)
+                        self._toggle_brackets("reverse", ">")
                         self.win.move(y, self.maxx-1)
                     else:
                         self.win.move(y, len(self.text[self.line_num]))
@@ -169,25 +169,29 @@ class ScrollTextbox():
                 self.line_num -= 1
             if ch in (curses.ascii.BS, curses.KEY_BACKSPACE):
                 self.win.delch()
-                self.text[self.line_num] = self.text[self.line_num][:x] + self.text[self.line_num][x+1:]
+                x_coord = (self.x_indx[self.line_num]-1)*self.maxx+x
+                self.text[self.line_num] = self.text[self.line_num][:x_coord] + self.text[self.line_num][x_coord+1:]
         # Ctrl-d (Delete character under cursor)
         elif ch == curses.ascii.EOT:                           # ^d
             self.toggle_save_needed(True)
             self.win.delch()
-            self.text[self.line_num] = self.text[self.line_num][:x] + self.text[self.line_num][x+1:]
-            if len(self.text[self.line_num][self.x_indx*self.maxx:]) < self.maxx:
-                self.win.chgat(y, self.maxx, A_NORMAL)
-                self.win.addch(y, self.maxx, ' ')
-        # Ctrl-e (Go to right edge (stripspaces off) or end of line (stripspaces on))
+            x_coord = (self.x_indx[self.line_num]-1)*self.maxx+x
+            self.text[self.line_num] = self.text[self.line_num][:x_coord] + self.text[self.line_num][x_coord+1:]
+            if len(self.text[self.line_num][x_coord:]) < self.maxx:
+                self._toggle_brackets("normal", ">")
+        # Ctrl-e (Go to right edge
         elif ch == curses.ascii.ENQ:                           # ^e
-            #if self.stripspaces:
-            #    self.win.move(y, self._end_of_line(y))
-            #else:
-            #    self.win.move(y, self.maxx)
-            self.win.move(y, self.maxx)
+            if len(self.text[self.line_num]) < self.x_indx[self.line_num]*self.maxx:
+                self.win.move(y, len(self.text[self.line_num]))
+            else:
+                self.win.move(y, self.maxx)
         # Ctrl-f (Cursor right, wrapping to next line when appropriate)
         elif ch in (curses.ascii.ACK, curses.KEY_RIGHT):       # ^f
-            if x < self.maxx:
+            if x == self.maxx-1 and len(self.text[self.line_num]) > self.x_indx[self.line_num]*self.maxx:
+                x_coord = self.x_indx[self.line_num]*self.maxx
+                self.win.addstr(y, 1, self.text[self.line_num][x_coord:])
+                self.win._toggle_brackets("reverse", "<")
+            elif x < self.maxx:
                 self.win.move(y, x+1)
             elif y == self.maxy:
                 self.win.scroll(1)
@@ -216,8 +220,10 @@ class ScrollTextbox():
             self.win.insertln()
             self.line_num += 1
             self.text = self.text[:self.line_num] + [""] + self.text[self.line_num:]
+            self.x_indx = self.x_indx[:self.line_num] + [1] + self.x_indx[self.line_num:]
             if self.line_num > len(self.text) - 1:
                 self.text.append("")
+                self.x_indx.append(1)
         # Ctrl-k (If line is blank, delete it, otherwise clear to end of line)
         elif ch == curses.ascii.VT:                            # ^k
             self.toggle_save_needed(True)
@@ -228,6 +234,7 @@ class ScrollTextbox():
                 self.win.move(y, x)
                 self.win.clrtoeol()
             self.text[self.line_num] = ""
+            self.x_indx[self.line_num] = 1
         # Ctrl-l (Refresh buffer)
         elif ch == curses.ascii.FF:                            # ^l
             self.win.refresh()
@@ -243,6 +250,7 @@ class ScrollTextbox():
                 else:
                     self.toggle_save_needed(True)
                     self.text.append("")
+                    self.x_indx.append(1)
                 self.win.move(y, x)
             else:
                 self.win.move(y+1, x)
@@ -251,6 +259,7 @@ class ScrollTextbox():
                 if self.line_num > len(self.text) - 1:
                     for i in range(len(self.text),self.line_num+1):
                         self.text.append("")
+                        self.x_indx.append(1)
                 # end sanity check #
             if x > len(self.text[self.line_num]):
                 self.win.move(y+1, len(self.text[self.line_num]))
@@ -260,8 +269,10 @@ class ScrollTextbox():
             self.win.insertln()
             if self.line_num > 0:
                 self.text = self.text[:self.line_num] + [""] + self.text[self.line_num:]
+                self.x_indx = self.x_indx[:self.line_num] + [1] + self.x_indx[sefl.line_num:]
             else:
                 self.text = [""] + self.text
+                self.x_indx = [1] + self.x_indx
             self.win.move(y, 0)
         # Ctrl-p (Cursor up, move up one line)
         elif ch in (curses.ascii.DLE, curses.KEY_UP):          # ^p
