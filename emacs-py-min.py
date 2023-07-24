@@ -38,7 +38,7 @@ class ScrollTextbox():
     def __init__(self, win):
         """Initialize the object"""
         self.win = win
-        win.keypad(1)
+        self.win.keypad(1)
         self.win.idlok(True)
         self.win.scrollok(True)
         self.line_num = 0
