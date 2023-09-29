@@ -11,7 +11,7 @@ from textual.widgets import DirectoryTree, Footer, Header, TextArea
 class TextEditor(App):
     """Textual code editor app."""
 
-    CSS_PATH = "texteditor.tcss"
+    CSS_PATH = "textualeditor.tcss"
     BINDINGS = [
         ("f", "toggle_files", "Toggle Files"),
         ("q", "quit", "Quit"),
