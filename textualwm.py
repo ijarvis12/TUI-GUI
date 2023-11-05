@@ -8,6 +8,8 @@ class Term(Terminal):
 
     def __init__(self, command):
         super().__init__(command)
+        self.x = self.styles.offset[0]
+        self.y = self.styles.offset[1]
 
     def on_mount(self):
         self.focus()
@@ -18,7 +20,7 @@ class Term(Terminal):
             # temp window is former 'above'
             temp_win = app.windows['above']
             temp_win.styles.layer = 'temp'
-            # 'above' window becomes this one (self)
+            # clicked window becomes 'above', and save previous layer
             prev_layer = self.styles.layer
             app.windows['above'] = self
             app.windows['above'].styles.layer = 'above'
