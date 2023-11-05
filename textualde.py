@@ -2,7 +2,7 @@
 
 from textual import on
 from textual.app import App, ComposeResult
-from textual.widgets import Select
+from textual.widgets import Select, Input
 from textual_terminal import Terminal
 from textual import events
 
@@ -63,40 +63,40 @@ class WindowManager(App):
             max-height: 100%;
             max-width: 100%;
             overflow: hidden;
-            layers: temp below below1 below2 below3 below4 below5 below6 below7 below8 above;
+            layers: temp wallpaper panel below below1 below2 below3 below4 below5 below6 below7 below8 above;
         }
         Term {
             max-height: 20;
             max-width: 80;
             border: white round;
         }
-        ImageViewer {
-            max-height: 80%;
-        }
         Select {
+            align: left bottom;
             width: 60;
-            margin: 0;
         }
     """
 
-    OPTIONS = ["New Terminal", "Remove Terminal", "Logout"]
+    OPTIONS = ["New Terminal", "Remove Terminal", "Set Wallpaper", "Logout"]
 
     windows = {}
 
     def __init__(self):
         """Inits background image"""
         super().__init__()
-        image_path = "./thunderstorm-3625405_1920.jpg"
+        self.panel = Select((option, option) for option in self.OPTIONS)
+        self.panel.styles.layer = 'panel'
+        self.image_path = "./thunderstorm.jpg"
         try:
-            self.image = Image.open(image_path)
+            self.image = Image.open(self.image_path)
             self.image_viewer = ImageViewer(self.image)
+            self.image_viewer.styles.layer = 'wallpaper'
         except:
-            print(f"{image_path} does not exist.")
+            print(f"{self.image_path} does not exist.")
             exit()
 
     def compose(self) -> ComposeResult:
         yield self.image_viewer
-        yield Select((option, option) for option in self.OPTIONS)
+        yield self.panel
 
     @on(Select.Changed)
     def select_changed(self, event: Select.Changed) -> None:
@@ -104,8 +104,32 @@ class WindowManager(App):
             self.add_window()
         elif event.value == "Remove Terminal":
             self.remove_window()
+        elif event.value == "Set Wallpaper":
+            if len(self.windows) > 0:
+                temp_win = self.windows['above']
+                self.windows['below8'] = temp_win
+                self.windows['below8'].styles.layer = 'below8'
+                del temp_win
+            self.windows['above'] = Input()
+            self.mount(self.windows['above'])
         elif event.value == "Logout":
             exit()
+
+    @on(Input.Submitted)
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        self.image_path = event.value
+        try:
+            self.image = Image.open(self.image_path)
+            self.image_viewer = ImageViewer(self.image)
+            self.image_viewer.styles.layer = 'wallpaper'
+            self.mount(self.image_viewer)
+        except:
+            pass
+        finally:
+            del self.windows['above']
+            if len(self.windows) > 0:
+                self.windows['above'] = self.windows['below8']
+                del self.windows['below8']
 
     def on_key(self, event: events.Key):
         if event.key == 'home':
