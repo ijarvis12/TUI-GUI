@@ -7,7 +7,7 @@ from textual import events
 class Term(Terminal):
 
     def __init__(self, command):
-        super().__init__(command)
+        super().__init__(command, default_colors="textual")
         self.x = self.styles.offset[0]
         self.y = self.styles.offset[1]
 
@@ -60,9 +60,9 @@ class WindowManager(App):
             overflow: hidden;
             layers: temp below below1 below2 below3 below4 below5 below6 below7 below8 above;
         }
-        Terminal {
+        Term {
             max-height: 20;
-            max-width: 50;
+            max-width: 80;
             border: white round;
         }
     """
