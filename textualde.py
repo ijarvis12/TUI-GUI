@@ -75,7 +75,7 @@ class WindowManager(App):
         }
         Select {
             width: 60;
-            margin: 2;
+            margin: 0;
         }
     """
 
