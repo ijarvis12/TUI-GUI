@@ -12,8 +12,8 @@ class Term(Terminal):
         self.y = self.styles.offset[1]
 
     def on_mount(self):
-        self.focus()
         self.start()
+        self.focus()
 
     def on_mouse_down(self, event: events.MouseDown):
         if self != app.windows['above']:
@@ -58,7 +58,7 @@ class WindowManager(App):
             max-height: 100%;
             max-width: 100%;
             overflow: hidden;
-            layers: above temp below below1 below2 below3 below4 below5 below6 below7 below8;
+            layers: temp below below1 below2 below3 below4 below5 below6 below7 below8 above;
         }
         Terminal {
             max-height: 20;
