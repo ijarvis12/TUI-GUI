@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
+from textual import on
 from textual.app import App, ComposeResult
+from textual.widgets import Select
 from textual_terminal import Terminal
 from textual import events
 
@@ -68,7 +70,16 @@ class WindowManager(App):
             max-width: 80;
             border: white round;
         }
+        ImageViewer {
+            max-height: 80%;
+        }
+        Select {
+            width: 60;
+            margin: 2;
+        }
     """
+
+    OPTIONS = ["New Terminal", "Remove Terminal", "Logout"]
 
     windows = {}
 
@@ -85,6 +96,16 @@ class WindowManager(App):
 
     def compose(self) -> ComposeResult:
         yield self.image_viewer
+        yield Select((option, option) for option in self.OPTIONS)
+
+    @on(Select.Changed)
+    def select_changed(self, event: Select.Changed) -> None:
+        if event.value == "New Terminal":
+            self.add_window()
+        elif event.value == "Remove Terminal":
+            self.remove_window()
+        elif event.value == "Logout":
+            exit()
 
     def on_key(self, event: events.Key):
         if event.key == 'home':
