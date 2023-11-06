@@ -7,7 +7,6 @@ from textual_terminal import Terminal
 from textual import events
 
 from PIL import Image
-from textual_imageview.img import ImageView
 from textual_imageview.viewer import ImageViewer
 
 class Term(Terminal):
