@@ -7,6 +7,7 @@ from textual_terminal import Terminal
 from textual import events
 
 from PIL import Image
+from textual_imageview.img import ImageView
 from textual_imageview.viewer import ImageViewer
 
 class Term(Terminal):
@@ -65,6 +66,10 @@ class WindowManager(App):
             overflow: hidden;
             layers: temp wallpaper panel below below1 below2 below3 below4 below5 below6 below7 below8 above;
         }
+        ImageViwer {
+            min-height: 100%;
+            min-width: 100%;
+        }
         Term {
             max-height: 20;
             max-width: 80;
@@ -99,10 +104,7 @@ class WindowManager(App):
 
     def compose(self) -> ComposeResult:
         yield self.image_viewer
-        self.image_viewer.image.zoom(-10)
-        self.image_viewer.refresh()
         yield self.panel
-        self.refresh()
 
     @on(Select.Changed)
     def select_changed(self, event: Select.Changed) -> None:
