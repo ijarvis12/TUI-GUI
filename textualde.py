@@ -71,8 +71,11 @@ class WindowManager(App):
             border: white round;
         }
         Select {
-            align: left bottom;
+            dock: bottom;
             width: 60;
+        }
+        Input {
+            dock: bottom;
         }
     """
 
@@ -81,7 +84,7 @@ class WindowManager(App):
     windows = {}
 
     def __init__(self):
-        """Inits background image"""
+        """Inits background image and panel"""
         super().__init__()
         self.panel = Select((option, option) for option in self.OPTIONS)
         self.panel.styles.layer = 'panel'
@@ -96,23 +99,28 @@ class WindowManager(App):
 
     def compose(self) -> ComposeResult:
         yield self.image_viewer
+        self.image_viewer.image.zoom(-10)
+        self.image_viewer.refresh()
         yield self.panel
+        self.refresh()
 
     @on(Select.Changed)
     def select_changed(self, event: Select.Changed) -> None:
-        if event.value == "New Terminal":
+        val = event.value
+        if val == "New Terminal":
             self.add_window()
-        elif event.value == "Remove Terminal":
+        elif val == "Remove Terminal":
             self.remove_window()
-        elif event.value == "Set Wallpaper":
+        elif val == "Set Wallpaper":
             if len(self.windows) > 0:
                 temp_win = self.windows['above']
                 self.windows['below8'] = temp_win
                 self.windows['below8'].styles.layer = 'below8'
                 del temp_win
             self.windows['above'] = Input()
+            self.windows['above'].styles.layer = 'above'
             self.mount(self.windows['above'])
-        elif event.value == "Logout":
+        elif val == "Logout":
             exit()
 
     @on(Input.Submitted)
@@ -120,15 +128,18 @@ class WindowManager(App):
         self.image_path = event.value
         try:
             self.image = Image.open(self.image_path)
+            self.image_viewer.remove()
             self.image_viewer = ImageViewer(self.image)
             self.image_viewer.styles.layer = 'wallpaper'
             self.mount(self.image_viewer)
         except:
             pass
         finally:
+            self.windows['above'].remove()
             del self.windows['above']
             if len(self.windows) > 0:
                 self.windows['above'] = self.windows['below8']
+                self.windows['above'].styles.layer = 'above'
                 del self.windows['below8']
 
     def on_key(self, event: events.Key):
