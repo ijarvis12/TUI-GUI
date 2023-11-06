@@ -11,7 +11,27 @@ from textual.widgets import DirectoryTree, Footer, Header, TextArea
 class TextEditor(App):
     """Textual code editor app."""
 
-    CSS_PATH = "textualeditor.tcss"
+    CSS = """
+    #tree-view {
+        display: none;
+        scrollbar-gutter: stable;
+        overflow: auto;
+        width: auto;
+        height: 100%;
+        dock: left;
+    }
+
+    TextEditor.-show-tree #tree-view {
+        display: block;
+        max-width: 50%;
+    }
+
+    #code {
+        overflow: auto scroll;
+        max-width: 100%;
+    }
+    """
+    
     BINDINGS = [
         ("f", "toggle_files", "Toggle Files"),
         ("q", "quit", "Quit"),
