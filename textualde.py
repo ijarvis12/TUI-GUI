@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 
+from functools import partial
+
 from textual import on
 from textual.app import App, ComposeResult
-from textual.widgets import Select, Input
+from textual.command import Hit, Hits, Provider
+from textual.widgets import Header, DirectoryTree
 from textual_terminal import Terminal
 from textual import events
 
@@ -56,92 +59,99 @@ class Term(Terminal):
             app.remove_window()
 
 
-class WindowManager(App):
+class DECommands(Provider):
+    """A command provider to open/close terminals and set the wallpaper"""
+
+    commands = ["New Terminal", "Remove Terminal", "Set Wallpaper"]
+    command = ""
+
+    async def assign_command(self, command: str):
+        self.command = command
+
+    async def search(self, query: str) -> Hits:
+        """Search for command hits"""
+        self.command = ""
+        matcher = self.matcher(query)
+        for c in self.commands:
+            score = matcher.match(c)
+            if score > 0:
+                yield Hit(score, matcher.highlight(c), partial(self.assign_command, c), help="Desktop Environment Command")
+
+    async def shutdown(self):
+        comm = self.command
+        if len(comm) > 0:
+            if comm == "New Terminal":
+                self.app.add_window()
+            elif comm == "Remove Terminal":
+                self.app.remove_window()
+            elif comm == "Set Wallpaper":
+                self.app.mount(DirectoryTree('./'))
+
+
+
+class DesktopEnvironment(App):
     CSS = """
         Screen {
             align: left top;
             max-height: 100%;
             max-width: 100%;
             overflow: hidden;
-            layers: temp wallpaper panel below below1 below2 below3 below4 below5 below6 below7 below8 above;
+            layers: temp wallpaper below below1 below2 below3 below4 below5 below6 below7 below8 above header;
+        }
+        Header {
+            layer: header;
         }
         ImageViwer {
             min-height: 100%;
             min-width: 100%;
+            layer: wallpaper;
         }
         Term {
             max-height: 20;
             max-width: 80;
             border: white round;
+            offset: 2 2;
         }
-        Select {
-            dock: bottom;
-            width: 60;
-        }
-        Input {
-            dock: bottom;
+        DirectoryTree {
+            offset: 2 2;
+            layer: header;
         }
     """
 
-    OPTIONS = ["New Terminal", "Remove Terminal", "Set Wallpaper", "Logout"]
+    COMMANDS = App.COMMANDS | {DECommands}
 
     windows = {}
 
     def __init__(self):
         """Inits background image and panel"""
         super().__init__()
-        self.panel = Select((option, option) for option in self.OPTIONS)
-        self.panel.styles.layer = 'panel'
+        self.header = Header(show_clock=True)
+        self.title = "Textual Desktop Environment"
+        self.sub_title = "By Ian P. Jarvis"
         self.image_path = "./thunderstorm.jpg"
         try:
             self.image = Image.open(self.image_path)
             self.image_viewer = ImageViewer(self.image)
-            self.image_viewer.styles.layer = 'wallpaper'
         except:
             print(f"{self.image_path} does not exist.")
             exit()
 
     def compose(self) -> ComposeResult:
+        yield self.header
         yield self.image_viewer
-        yield self.panel
 
-    @on(Select.Changed)
-    def select_changed(self, event: Select.Changed) -> None:
-        val = event.value
-        if val == "New Terminal":
-            self.add_window()
-        elif val == "Remove Terminal":
-            self.remove_window()
-        elif val == "Set Wallpaper":
-            if len(self.windows) > 0:
-                temp_win = self.windows['above']
-                self.windows['below8'] = temp_win
-                self.windows['below8'].styles.layer = 'below8'
-                del temp_win
-            self.windows['above'] = Input()
-            self.windows['above'].styles.layer = 'above'
-            self.mount(self.windows['above'])
-        elif val == "Logout":
-            exit()
-
-    @on(Input.Submitted)
-    def on_input_submitted(self, event: Input.Submitted) -> None:
-        self.image_path = event.value
+    @on(DirectoryTree.FileSelected)
+    def on_directory_tree_file_selected(self, event: DirectoryTree.FileSelected) -> None:
+        self.image_path = event.path
         try:
             self.image = Image.open(self.image_path)
             self.image_viewer.remove()
             self.image_viewer = ImageViewer(self.image)
-            self.image_viewer.styles.layer = 'wallpaper'
             self.mount(self.image_viewer)
         except:
             pass
         finally:
-            self.windows['above'].remove()
-            del self.windows['above']
-            if len(self.windows) > 0:
-                self.windows['above'] = self.windows['below8']
-                self.windows['above'].styles.layer = 'above'
-                del self.windows['below8']
+            self.query_one(DirectoryTree).remove()
 
     def on_key(self, event: events.Key):
         if event.key == 'home':
@@ -183,5 +193,5 @@ class WindowManager(App):
 
 
 if __name__ == "__main__":
-    app = WindowManager()
+    app = DesktopEnvironment()
     app.run()
