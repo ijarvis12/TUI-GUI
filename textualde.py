@@ -2,12 +2,11 @@
 
 from functools import partial
 
-from textual import on
+from textual import on, events
 from textual.app import App, ComposeResult
 from textual.command import Hit, Hits, Provider
 from textual.widgets import Header, DirectoryTree
 from textual_terminal import Terminal
-from textual import events
 
 from PIL import Image
 from textual_imageview.viewer import ImageViewer
