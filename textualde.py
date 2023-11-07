@@ -101,7 +101,7 @@ class DesktopEnvironment(App):
         Header {
             layer: header;
         }
-        ImageViwer {
+        ImageViewer {
             min-height: 100%;
             min-width: 100%;
             layer: wallpaper;
