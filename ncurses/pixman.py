@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import curses
-import curses.ascii
 from cusser import Cusser
 
 class DisplayServer():
@@ -9,10 +8,7 @@ class DisplayServer():
         def __init__(self, stdscr):
                 self.screen = stdscr = Cusser(stdscr)
                 curses.curs_set(0)
-                curses.start_color()
-                curses.use_default_colors()
-                curses.init_pair(1, -1, curses.COLOR_WHITE)
-                self.screen.attron(curses.color_pair(1))
+                curses.noecho()
 
         def __del__(self):
                 curses.endwin()
