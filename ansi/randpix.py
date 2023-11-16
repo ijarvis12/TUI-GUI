@@ -2,6 +2,7 @@
 
 from sys import stdout, stdin
 from time import sleep
+from threading import Thread
 
 class fg:
   black = "\u001b[30m"
@@ -32,6 +33,7 @@ class util:
   reset = "\u001b[0m"
   bold = "\u001b[1m"
   underline = "\u001b[4m"
+  blink = "\u001b[5m"
   reverse = "\u001b[7m"
 
   # clear functions
@@ -57,32 +59,61 @@ class util:
   #sixel_begin = "\u001bPq"
   #sixel_end = "\u001b\\"
 
+  def init():
+    stdout.write(util.reset+util.clear+util.top+util.cursor_disable+util.wrap_disable+fg.white)
+    stdout.flush()
+
+  def end():
+    stdout.write(util.reset+util.clear+util.top+util.cursor_enable+util.wrap_enable)
+    stdout.flush()
+
   def to(x, y):
     stdout.write(f"\u001b[{y};{x}H")
-    stdout.flush()
 
   def set_pixel(x, y, rgb):
-    r, g, b = rgb  # r,g,b range 0 to 255
+    r, g, b = rgb  # r,g,b each range 0 to 255
     util.to(x, y)
     stdout.write(bg.rgb(r,g,b)+' ')
-    stdout.flush()
 
   #def set_sixel(x, y, rgb, ch):
-    #r, g, b = rgb  # r,g,b range 0 to 100
+    #r, g, b = rgb  # r,g,b each range 0 to 100
     #util.to(x, y)
     #stdout.write(util.reset+util.sixel_begin+f"#0;2;{r};{g};{b}#0{ch}"+util.sixel_end)
-    #stdout.flush()
 
+  def set_blink(x, y, rgb=(0, 0, 0)):
+    util.to(x, y)
+    r, g, b = rgb  # r,g,b each range 0 to 255
+    stdout.write(bg.rgb(r, g, b)+util.blink+'@')
+    stdout.flush()
+
+  def unset_blink(x, y, rgb=(0, 0, 0)):
+    util.to(x, y)
+    r, g, b = rgb  # r,g,b each range 0 to 255
+    stdout.write(bg.rgb(r, g, b)+' ')
+    stdout.flush()
 
 
 if __name__ == '__main__':
 
-  stdout.write(util.cursor_disable+util.wrap_disable)
-  stdout.flush()
+  util.init()
 
   for i in range(0,7):
     util.set_pixel(i, i, (255,0,0))
 
-  sleep(4)
+  for i in range(12,20):
+    util.set_pixel(i, i, (0, 0, 255))
 
-  stdout.write(util.reset+util.clear+util.top+util.cursor_enable+util.wrap_enable)
+  stdout.flush()
+  sleep(1)
+
+  for i in range(0,5):
+    util.set_blink(i, i, (0, 255, 0))
+
+  sleep(5)
+
+  for i in range(0,5):
+    util.unset_blink(i , i, (255, 0, 0))
+
+  sleep(3)
+
+  util.end()
