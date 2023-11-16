@@ -18,8 +18,9 @@ class DisplayServer():
 
         def set_pixel(self, y, x, rgb=(0, 0, 0), blink=False):
                 r, g, b = rgb                           # r,g,b each range 0 to 255
-                string = f"\033[{y};{x}H"               # position
-                string += "\033[5m" if blink else ""    # blink
+                #string = f"\033[{y};{x}H"              # position
+                self.screen.move(y, x)
+                string = "\033[5m" if blink else ""     # blink
                 string += f"\033[38;2;{r};{g};{b}m"     # color
                 string += '@'                           # pixel
                 self.screen.addstr(string)
@@ -44,7 +45,7 @@ def main(stdscr):
 
         ds.pause()
 
-        for i in range(2,10):
+        for i in range(1,10):
                 ds.set_pixel(i, i, (0, 0, 0), False)
 
         ds.pause()
