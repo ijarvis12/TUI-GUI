@@ -22,8 +22,8 @@ class DisplayServer():
 
         def set_pixel(self, y, x, rgb, blink=False):
                 r, g, b = rgb  # r,g,b each range 0 to 1000
-                curses.init_color(7, r, g, b)
-                curses.init_pair(1, curses.COLOR_WHITE, 7)
+                curses.init_color(5, r, g, b)
+                curses.init_pair(1, curses.COLOR_WHITE, 5)
                 ch = '.' if blink else ' '
                 self.screen.addch(y, x, ch, curses.color_pair(1))
 
@@ -49,6 +49,13 @@ def main(stdscr):
 
         # trying to add a sixel
         ds.screen.addstr("\033Pq#0;2;100;0;0#0~\033\\")
+        ds.screen.refresh()
+
+        # add ansi background color
+        ds.screen.addstr("\033[42m ")
+        ds.screen.refresh()
+
+        ds.pause()
 
         for i in range(1,10):
                 ds.set_pixel(i, i, (0, 0, 0), True)
