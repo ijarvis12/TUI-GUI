@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 
-from sys import stdout, stdin
+from sys import stdout
 from time import sleep
+
+write = stdout.write
+flush = stdout.flush
 
 class fg:
   black = "\u001b[30m"
@@ -55,34 +58,34 @@ class util:
   top = "\u001b[0;0H"
 
   # sixel begin/end
-  sixel_begin = "\x1b\x50\x71"
-  sixel_end = "\x1b\x5c"
+  sixel_begin = "\033Pq"
+  sixel_end = "\033\\"
 
   def init():
-    stdout.write(util.reset+util.clear+util.top+util.cursor_disable+util.wrap_disable+fg.white+util.blink)
-    stdout.flush()
+    write(util.reset+util.clear+util.top+util.cursor_disable+util.wrap_disable+fg.white+util.blink)
+    flush()
 
   def end():
-    stdout.write(util.reset+util.clear+util.top+util.cursor_enable+util.wrap_enable)
-    stdout.flush()
+    write(util.reset+util.clear+util.top+util.cursor_enable+util.wrap_enable)
+    flush()
 
   def to(x, y):
-    stdout.write(f"\u001b[{y};{x}H")
+    write(f"\u001b[{y};{x}H")
 
   def pause():
-    stdout.flush()
+    flush()
     _ = input()
 
   def set_pixel(x, y, rgb=(255, 255, 255), blink=False):
     r, g, b = rgb  # r,g,b each range 0 to 255
     util.to(x, y)
     char = '@' if blink else ' '
-    stdout.write(bg.rgb(r,g,b)+char)
+    write(bg.rgb(r,g,b)+char)
 
-  def set_sixel(x, y, rgb=(0, 0, 0), ch='~'):
+  def set_sixel(x, y, rgb=(0, 0, 0), repeat=12, ch='~'):
     r, g, b = rgb  # r,g,b each range 0 to 100
     util.to(x, y)
-    stdout.write(util.sixel_begin+r"#0;2;{red};{green};{blue}#0{char}".format(red=r,green=g,blue=b,char=ch)+util.sixel_end)
+    write(util.sixel_begin+"#0;2;{red};{green};{blue}#0!{rep}{char}".format(red=r,green=g,blue=b,rep=repeat,char=ch)+util.sixel_end)
 
 
 if __name__ == '__main__':
