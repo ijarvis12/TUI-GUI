@@ -8,11 +8,11 @@ class DisplayServer():
 
         def __init__(self, stdscr):
                 self.screen = stdscr = Cusser(stdscr)
-                #curses.noraw()
                 curses.curs_set(0)
                 curses.start_color()
                 curses.use_default_colors()
-                self.screen.attron(curses.A_BLINK)
+                curses.init_pair(1, -1, curses.COLOR_WHITE)
+                self.screen.attron(curses.color_pair(1))
 
         def __del__(self):
                 curses.endwin()
@@ -20,22 +20,13 @@ class DisplayServer():
         def end(self):
                 self.__del__()
 
-        def set_pixel(self, y, x, rgb, blink=False):
-                r, g, b = rgb  # r,g,b each range 0 to 1000
-                curses.init_color(5, r, g, b)
-                curses.init_pair(1, curses.COLOR_WHITE, 5)
-                ch = '.' if blink else ' '
-                self.screen.addch(y, x, ch, curses.color_pair(1))
-
-        def set_pixel_blink(self, y, x):
-                ch = self.screen.inch(y, x)
-                attr = ch & 0xFF00
-                self.screen.addch(y, x, '.', attr)
-
-        def unset_pixel_blink(self, y, x):
-                ch = self.screen.inch(y, x)
-                attr = ch & 0xFF00
-                self.screen.addch(y, x, ' ', attr)
+        def set_pixel(self, y, x, rgb=(0, 0, 0), blink=False):
+                r, g, b = rgb                           # r,g,b each range 0 to 255
+                string = f"\033[{y};{x}H"               # position
+                string += "\033[5m" if blink else ""    # blink
+                string += f"\033[38;2;{r};{g};{b}m"     # color
+                string += '@'                           # pixel
+                self.screen.addstr(string)
 
         def pause(self):
                 self.screen.getch()
@@ -48,27 +39,27 @@ def main(stdscr):
         ds.screen.addstr(str(curses.COLOR_PAIRS))
 
         # trying to add a sixel
-        ds.screen.addstr("\033Pq#0;2;100;0;0#0~\033\\")
-        ds.screen.refresh()
+        #ds.screen.addstr("\033Pq#0;2;100;0;0#0~\033\\")
+        #ds.screen.refresh()
 
         # add ansi background color
-        ds.screen.addstr("\033[42m ")
-        ds.screen.refresh()
+        #ds.screen.addstr("\033[42m ")
+        #ds.screen.refresh()
 
         ds.pause()
 
-        for i in range(1,10):
-                ds.set_pixel(i, i, (0, 0, 0), True)
+        for i in range(2,10):
+                ds.set_pixel(i, i, (0, 0, 0), False)
 
         ds.pause()
 
         for i in range(10,20):
-                ds.set_pixel(i, i, (1000, 0, 0), True)
+                ds.set_pixel(i, i, (255, 0, 0), False)
 
         ds.pause()
 
         for i in range(1,20):
-                ds.unset_pixel_blink(i, i)
+                ds.set_pixel(i, i, (0, 0, 255), True)
 
         ds.pause()
 
