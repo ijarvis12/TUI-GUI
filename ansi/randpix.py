@@ -2,7 +2,6 @@
 
 from sys import stdout, stdin
 from time import sleep
-from threading import Thread
 
 class fg:
   black = "\u001b[30m"
@@ -56,11 +55,11 @@ class util:
   top = "\u001b[0;0H"
 
   # sixel begin/end
-  #sixel_begin = "\u001bPq"
-  #sixel_end = "\u001b\\"
+  sixel_begin = "\x1b\x50\x71"
+  sixel_end = "\x1b\x5c"
 
   def init():
-    stdout.write(util.reset+util.clear+util.top+util.cursor_disable+util.wrap_disable+fg.white)
+    stdout.write(util.reset+util.clear+util.top+util.cursor_disable+util.wrap_disable+fg.white+util.blink)
     stdout.flush()
 
   def end():
@@ -70,32 +69,27 @@ class util:
   def to(x, y):
     stdout.write(f"\u001b[{y};{x}H")
 
-  def set_pixel(x, y, rgb):
-    r, g, b = rgb  # r,g,b each range 0 to 255
-    util.to(x, y)
-    stdout.write(bg.rgb(r,g,b)+' ')
-
-  #def set_sixel(x, y, rgb, ch):
-    #r, g, b = rgb  # r,g,b each range 0 to 100
-    #util.to(x, y)
-    #stdout.write(util.reset+util.sixel_begin+f"#0;2;{r};{g};{b}#0{ch}"+util.sixel_end)
-
-  def set_blink(x, y, rgb=(0, 0, 0)):
-    util.to(x, y)
-    r, g, b = rgb  # r,g,b each range 0 to 255
-    stdout.write(bg.rgb(r, g, b)+util.blink+'@')
+  def pause():
     stdout.flush()
+    _ = input()
 
-  def unset_blink(x, y, rgb=(0, 0, 0)):
-    util.to(x, y)
+  def set_pixel(x, y, rgb=(255, 255, 255), blink=False):
     r, g, b = rgb  # r,g,b each range 0 to 255
-    stdout.write(bg.rgb(r, g, b)+' ')
-    stdout.flush()
+    util.to(x, y)
+    char = '@' if blink else ' '
+    stdout.write(bg.rgb(r,g,b)+char)
+
+  def set_sixel(x, y, rgb=(0, 0, 0), ch='~'):
+    r, g, b = rgb  # r,g,b each range 0 to 100
+    util.to(x, y)
+    stdout.write(util.sixel_begin+r"#0;2;{red};{green};{blue}#0{char}".format(red=r,green=g,blue=b,char=ch)+util.sixel_end)
 
 
 if __name__ == '__main__':
 
   util.init()
+
+  util.set_sixel(1, 1)
 
   for i in range(0,7):
     util.set_pixel(i, i, (255,0,0))
@@ -103,17 +97,16 @@ if __name__ == '__main__':
   for i in range(12,20):
     util.set_pixel(i, i, (0, 0, 255))
 
-  stdout.flush()
-  sleep(1)
+  util.pause()
 
   for i in range(0,5):
-    util.set_blink(i, i, (0, 255, 0))
+    util.set_pixel(i, i, (0, 255, 0), True)
 
-  sleep(5)
+  util.pause()
 
   for i in range(0,5):
-    util.unset_blink(i , i, (255, 0, 0))
+    util.set_pixel(i , i, (255, 0, 0))
 
-  sleep(3)
+  util.pause()
 
   util.end()
