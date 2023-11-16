@@ -85,7 +85,7 @@ class util:
   def set_sixel(x, y, rgb=(0, 0, 0), repeat=12, ch='~'):
     r, g, b = rgb  # r,g,b each range 0 to 100
     util.to(x, y)
-    write(util.sixel_begin+"#0;2;{red};{green};{blue}#0!{rep}{char}".format(red=r,green=g,blue=b,rep=repeat,char=ch)+util.sixel_end)
+    write(util.sixel_begin+f"#0;2;{r};{g};{b}#0!{repeat}{ch}"+util.sixel_end)
 
 
 if __name__ == '__main__':
