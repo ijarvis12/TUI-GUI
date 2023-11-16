@@ -16,6 +16,9 @@ class DisplayServer():
         def end(self):
                 self.__del__()
 
+        def pause(self):
+                self.screen.getch()
+
         def set_pixel(self, y, x, rgb=(0, 0, 0), blink=False):
                 r, g, b = rgb                                   # r,g,b each range 0 to 255
                 string = ""
@@ -25,8 +28,14 @@ class DisplayServer():
                 string += f"\033[38;2;{r};{g};{b}m"+'@'         # color and pixel char
                 self.screen.addstr(string)
 
-        def pause(self):
-                self.screen.getch()
+        def set_sixel(self, y, x, rgb=(0, 0, 0), repeat=12, ch='~'):
+                r, g, b = rgb                   # r,g,b each range 0 to 100
+                self.screen.move(y, x)
+                string = "\033Pq"               # start sixel
+                string += f"#0;2;{r};{g};{b}"   # color
+                string += f"#0!{repeat}{ch}"    # pixels to repeat
+                string += "\033\\"              # end sixel
+                self.screen.addstr(string)
 
 
 def main(stdscr):
@@ -36,12 +45,7 @@ def main(stdscr):
         ds.screen.addstr(str(curses.COLOR_PAIRS))
 
         # trying to add a sixel
-        #ds.screen.addstr("\033Pq#0;2;100;0;0#0~\033\\")
-        #ds.screen.refresh()
-
-        # add ansi background color
-        #ds.screen.addstr("\033[42m ")
-        #ds.screen.refresh()
+        ds.set_sixel(2, 3)
 
         ds.pause()
 
