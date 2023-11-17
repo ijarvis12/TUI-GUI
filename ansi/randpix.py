@@ -112,4 +112,18 @@ if __name__ == '__main__':
 
   util.pause()
 
+  import random
+
+  random.seed()
+
+  for i in range(0,20):
+    for j in range(0,50):
+      r = random.randrange(256)
+      g = random.randrange(256)
+      b = random.randrange(256)
+      blnk = random.choice([True,False])
+      util.set_pixel(j, i, (r, g, b), blnk)
+
+  util.pause()
+
   util.end()
