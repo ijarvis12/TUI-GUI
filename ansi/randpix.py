@@ -62,7 +62,7 @@ class util:
   sixel_end = "\033\\"
 
   def init():
-    write(util.reset+util.clear+util.top+util.cursor_disable+util.wrap_disable+fg.white+util.blink)
+    write(util.reset+util.clear+util.top+util.cursor_disable+util.wrap_disable)
     flush()
 
   def end():
@@ -74,13 +74,13 @@ class util:
 
   def pause():
     flush()
-    _ = input()
+    _ = input(util.reset+fg.white)
 
   def set_pixel(x, y, rgb=(255, 255, 255), blink=False):
     r, g, b = rgb  # r,g,b each range 0 to 255
     util.to(x, y)
-    char = '@' if blink else ' '
-    write(bg.rgb(r,g,b)+char)
+    if_blnk = util.blink if blink else util.reset
+    write(if_blnk+fg.rgb(r,g,b)+'@')
 
   def set_sixel(x, y, rgb=(0, 0, 0), repeat=12, ch='~'):
     r, g, b = rgb  # r,g,b each range 0 to 100
@@ -121,7 +121,7 @@ if __name__ == '__main__':
       r = random.randrange(256)
       g = random.randrange(256)
       b = random.randrange(256)
-      blnk = random.choice([True,False])
+      blnk = random.choice([True,False,False,False])
       util.set_pixel(j, i, (r, g, b), blnk)
 
   util.pause()
