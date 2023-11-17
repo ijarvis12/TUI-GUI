@@ -2,7 +2,6 @@
 
 import curses
 
-
 class DisplayServer():
   """Because of the limitations of ncurses, we can only do 8 bit color"""
 
@@ -12,12 +11,13 @@ class DisplayServer():
     curses.noecho()
     # init colors
     curses.start_color()
+    self.max_color_num = curses.COLORS - 1
     # init black and white colors
-    curses.init_color(0, 0, 0, 0)
-    curses.init_color(curses.COLORS-1, 1000, 1000, 1000)
+    curses.init_color(0, 0, 0, 0)  # black
+    curses.init_color(self.max_color_num, 1000, 1000, 1000)  # white
     # init white background
-    curses.init_pair(curses.COLORS-1, 0, curses.COLORS-1)
-    self.screen.bkgd(' ', curses.color_pair(curses.COLORS-1))
+    #curses.init_pair(curses.COLORS-1, 0, curses.COLORS-1)
+    #self.screen.bkgd(' ', curses.color_pair(curses.COLORS-1))
     color_num = 0
     color_range_step = 3000 // int(curses.COLORS**(1/3))
     # r,g,b each range 0 to 1000
@@ -26,8 +26,11 @@ class DisplayServer():
         for b in range(0, 1001, color_range_step):
           color_num += 1
           curses.init_color(color_num, r, g, b)
-    for cp in range(1, curses.COLORS-1):
-      curses.init_pair(cp, cp, curses.COLORS-1)
+    # init color pairs (use black background)
+    for color in range(1, curses.COLORS-1):
+      curses.init_pair(color, color, 0)
+    # init pair white on black
+    curses.init_pair(self.max_color_num, self.max_color_num, 0)
 
   def __del__(self):
     curses.endwin()
@@ -38,7 +41,8 @@ class DisplayServer():
   def pause(self):
     self.screen.getch()
 
-  def set_pixel(self, y, x, cp=0, set_blink=False):
+  def set_pixel(self, y, x, cp=-1, set_blink=False):
+    cp = cp if cp != -1 else self.max_color_num
     # get pixel blinking attr
     already_blinking = (self.screen.inch(y, x) & curses.A_ATTRIBUTES) == curses.A_BLINK
     # maybe set pixel blinking attr
@@ -51,7 +55,7 @@ class DisplayServer():
     # set pixel
     self.screen.addch(y, x, '@', curses.color_pair(cp) | if_set_blink)
 
-  def set_sixel(self, y, x, cp=0, repeat=1, ch='~'):
+  def set_sixel(self, y, x, cp=-1, repeat=1, ch='~'):
     binary = bin(ord(ch) - 63)[2:]
     y_range = []
     for e,b in enumerate(binary[::-1]):
