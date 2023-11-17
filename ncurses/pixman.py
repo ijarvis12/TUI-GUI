@@ -3,6 +3,8 @@
 import curses
 from cusser import Cusser
 
+
+
 class DisplayServer():
 
         def __init__(self, stdscr):
@@ -30,12 +32,17 @@ class DisplayServer():
 
         def set_sixel(self, y, x, rgb=(0, 0, 0), repeat=12, ch='~'):
                 r, g, b = rgb                   # r,g,b each range 0 to 100
-                self.screen.move(y, x)
-                string = "\033Pq"               # start sixel
-                string += f"#0;2;{r};{g};{b}"   # color
-                string += f"#0!{repeat}{ch}"    # pixels to repeat
-                string += "\033\\"              # end sixel
-                self.screen.addstr(string)
+                r = int(2.5*r)
+                g = int(2.5*r)
+                b = int(2.5*r)
+                binary = bin(ord(ch) - 63)[2:]
+                y_range = []
+                for e,b in enumerate(binary):
+                        y_range.append(e)
+                for i in range(0,repeat):
+                        for j in y_range:
+                                self.set_pixel(y+j, x+i, rgb=(r, g, b))
+
 
 
 def main(stdscr):
@@ -45,7 +52,7 @@ def main(stdscr):
         ds.screen.addstr(str(curses.COLOR_PAIRS))
 
         # trying to add a sixel
-        ds.set_sixel(2, 3)
+        ds.set_sixel(2, 10)
 
         ds.pause()
 
