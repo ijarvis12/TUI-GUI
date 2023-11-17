@@ -30,7 +30,7 @@ class DisplayServer():
                 string += f"\033[38;2;{r};{g};{b}m"+'@'         # color and pixel char
                 self.screen.addstr(string)
 
-        def set_sixel(self, y, x, rgb=(0, 0, 0), repeat=12, ch='~'):
+        def set_sixel(self, y, x, rgb=(0, 0, 0), repeat=1, ch='~'):
                 r, g, b = rgb                   # r,g,b each range 0 to 100
                 r = int(2.5*r)
                 g = int(2.5*r)
@@ -49,10 +49,10 @@ def main(stdscr):
 
         ds = DisplayServer(stdscr)
 
-        ds.screen.addstr(str(curses.COLOR_PAIRS))
+        #ds.screen.addstr(str(curses.COLOR_PAIRS))
 
-        # trying to add a sixel
-        ds.set_sixel(2, 10)
+        # add a sixel
+        ds.set_sixel(2, 10, repeat=5)
 
         ds.pause()
 
