@@ -37,7 +37,7 @@ class DisplayServer():
                 b = int(2.5*r)
                 binary = bin(ord(ch) - 63)[2:]
                 y_range = []
-                for e,b in enumerate(binary):
+                for e,b in enumerate(binary[::-1]):
                         y_range.append(e)
                 for i in range(0,repeat):
                         for j in y_range:
@@ -45,40 +45,56 @@ class DisplayServer():
 
 
 
-def main(stdscr):
-
-        ds = DisplayServer(stdscr)
-
-        #ds.screen.addstr(str(curses.COLOR_PAIRS))
-
-        # add a sixel
-        ds.set_sixel(2, 10, repeat=5)
-
-        ds.pause()
-
-        for i in range(1,10):
-                ds.set_pixel(i, i, (0, 0, 0))
-
-        ds.pause()
-
-        for i in range(10,20):
-                ds.set_pixel(i, i, (255, 0, 0))
-
-        ds.pause()
-
-        for i in range(1,20):
-                ds.set_pixel(i, i, (0, 0, 255), True)
-
-        ds.pause()
-
-        for i in range(1,10):
-                ds.set_pixel(i, i, (0, 0, 255))
-
-        ds.pause()
-
-        ds.end()
-
 
 
 if __name__ == '__main__':
+
+        import random
+
+        def main(stdscr):
+
+                ds = DisplayServer(stdscr)
+
+                ds.screen.addstr(str(curses.COLOR_PAIRS))
+
+                # trying to add a sixel
+                ds.set_sixel(2, 10, repeat=5, ch='~')
+
+                ds.pause()
+
+                for i in range(1,10):
+                        ds.set_pixel(i, i, (0, 0, 0))
+
+                ds.pause()
+
+                for i in range(10,20):
+                        ds.set_pixel(i, i, (255, 0, 0))
+
+                ds.pause()
+
+                for i in range(1,20):
+                        ds.set_pixel(i, i, (0, 0, 255), True)
+
+                ds.pause()
+
+                for i in range(1,10):
+                        ds.set_pixel(i, i, (0, 0, 255))
+
+                ds.pause()
+
+                random.seed()
+
+                for i in range(0,15):
+                        for j in range(0,15):
+                                r = random.randrange(256)
+                                g = random.randrange(256)
+                                b = random.randrange(256)
+                                blnk = random.choice([True,False])
+                                ds.set_pixel(i, j, (r, g, b), blnk)
+
+                ds.pause()
+
+                ds.end()
+
+
         curses.wrapper(main)
