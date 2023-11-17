@@ -89,7 +89,7 @@ if __name__ == '__main__':
                                 r = random.randrange(256)
                                 g = random.randrange(256)
                                 b = random.randrange(256)
-                                blnk = random.choice([True,False])
+                                blnk = random.choice([True,False,False,False])
                                 ds.set_pixel(i, j, (r, g, b), blnk)
 
                 ds.pause()
