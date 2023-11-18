@@ -7,7 +7,9 @@ class DisplayServer():
 
   def __init__(self, stdscr):
     self.screen = stdscr
+    # no visible cursor
     curses.curs_set(0)
+    # no input echoing
     curses.noecho()
     # init color
     curses.start_color()
@@ -29,6 +31,8 @@ class DisplayServer():
       curses.init_pair(color, color, 0)
     # init pair white on black
     curses.init_pair(self.max_color_num, self.max_color_num, 0)
+    # clear screen
+    self.clear_screen()
 
   def __del__(self):
     curses.endwin()
@@ -38,6 +42,11 @@ class DisplayServer():
 
   def pause(self):
     self.screen.getch()
+
+  def clear_screen(self):
+    maxy, maxx = self.screen.getmaxyx()
+    for i in range(maxy-1):
+      self.screen.hline(i, 0, ' ', maxx-1)  # hlines display faster than individual pixels
 
   def set_pixel(self, y, x, cp=0, set_blink=False):
     # get pixel blinking attr
@@ -70,9 +79,6 @@ class DisplayServer():
     color_pair = char_and_attr & curses.A_COLOR
     return (is_blinking, color_pair)
 
-  def clear_screen(self):
-    self.screen.bkgd(' ', curses.color_pair(1))
-
 
 
 
@@ -87,12 +93,12 @@ if __name__ == '__main__':
     ds.screen.addstr(str(curses.COLOR_PAIRS)+' '+str(curses.COLORS))
 
     # trying to add a sixel
-    ds.set_sixel(2, 10, repeat=5, ch='~')
+    ds.set_sixel(2, 10, cp=100, repeat=5, ch='~')
 
     ds.pause()
 
     for i in range(1,10):
-      ds.set_pixel(i, i, 0)
+      ds.set_pixel(i, i, 200)
 
     ds.pause()
 
@@ -111,21 +117,21 @@ if __name__ == '__main__':
 
     ds.pause()
 
+    random.seed()
+
+    for i in range(0,16):
+      for j in range(0,16):
+        cp = random.randrange(0, curses.COLORS-1)
+        blnk = random.choice([True,False,False,False,False,False,False,False,False,False])
+        ds.set_pixel(i, j, cp, blnk)
+
+    ds.pause()
+
     maxy, maxx = ds.screen.getmaxyx()
-
-    #random.seed()
-
-    #for i in range(0,maxy-1):
-    #  for j in range(0,maxx-1):
-    #    cp = random.randrange(0, curses.COLORS-1)
-    #    blnk = random.choice([True,False,False,False,False,False,False,False,False,False])
-    #    ds.set_pixel(i, j, cp, blnk)
-
-    #ds.pause()
 
     for i in range(0,maxy-1):
       for j in range(0,maxx-1):
-        ds.set_pixel(i, j)
+        ds.set_pixel(i, j, 255)
 
     ds.pause()
 
