@@ -27,10 +27,17 @@ class DisplayServer():
           color_num += 1
           curses.init_color(color_num, r, g, b)
     # init color pairs (use black background)
-    for color in range(1, curses.COLORS-1):
+    for color in range(1, self.max_color_num):
       curses.init_pair(color, color, 0)
     # init pair white on black
     curses.init_pair(self.max_color_num, self.max_color_num, 0)
+    # clear the rest of the color pairs (for get_pixel not mixing up)
+    for cp in range(self.max_color_num+1, curses.COLOR_PAIRS):
+      ### BUG IN PYTHON 3.9 ###
+      try:
+        curses.init_pair(cp, 0, 0)
+      except:
+        pass
     # clear screen
     self.clear_screen()
 
@@ -48,7 +55,16 @@ class DisplayServer():
     for i in range(maxy-1):
       self.screen.hline(i, 0, ' ', maxx-1)  # hlines display faster than individual pixels
 
-  def set_pixel(self, y, x, cp=0, set_blink=False):
+  def set_pixel(self, y, x, rgb=(0,0,0), set_blink=False):
+    # rgb - arithmetic, each range from 0 to 255
+    r, g, b = rgb
+    r //= 3
+    g //= 3
+    b //= 3
+    color_num = int(b)
+    color_num += int(g+(curses.COLORS/3)) if g != 0 else 0
+    color_num += int(r+(curses.COLORS*(2/3))) if r != 0 else 0
+    cp = color_num
     # get pixel blinking attr
     already_blinking = (self.screen.inch(y, x) & curses.A_ATTRIBUTES) == curses.A_BLINK
     # maybe set pixel blinking attr
@@ -61,7 +77,7 @@ class DisplayServer():
     # set pixel
     self.screen.addch(y, x, '@', curses.color_pair(cp) | if_set_blink)
 
-  def set_sixel(self, y, x, cp=0, repeat=1, ch='~'):
+  def set_sixel(self, y, x, rgb=(0,0,0), repeat=1, ch='~'):
     # get binary bitmask of sixel
     binary = bin(ord(ch) - 63)[2:]
     # get pixels to set
@@ -71,13 +87,23 @@ class DisplayServer():
     # set pixels
     for i in range(0,repeat):
       for j in y_range:
-        self.set_pixel(y+j, x+i, cp)
+        self.set_pixel(y+j, x+i, rgb)
 
-  def get_pixel(self, y, x):
-    char_and_attr = self.screen.inch(y, x)
-    is_blinking = char_and_attr & curses.A_ATTRIBUTES == curses.A_BLINK
-    color_pair = char_and_attr & curses.A_COLOR
-    return (is_blinking, color_pair)
+  ### BUG IN PYTHON 3.9 PREVENTS THIS FUNCTION FROM WORKING ###
+  #def get_pixel(self, y, x):
+  #  char_and_attr = self.screen.inch(y, x)
+  #  is_blinking = char_and_attr & curses.A_ATTRIBUTES == curses.A_BLINK
+  #  color_pair = char_and_attr & curses.A_COLOR
+  #  fg_color, _ = curses.pair_content(color_pair)
+  #  rgb = curses.color_content(fg_color) # rgb is a 3-tuple ranging from 0 to 1000
+  #  r, g, b = rgb
+  #  r *= curses.COLORS
+  #  g *= curses.COLORS
+  #  b *= curses.COLORS
+  #  r //= 1000
+  #  g //= 1000
+  #  b //= 1000
+  #  return (is_blinking, (r, g, b))
 
 
 
@@ -93,27 +119,27 @@ if __name__ == '__main__':
     ds.screen.addstr(str(curses.COLOR_PAIRS)+' '+str(curses.COLORS))
 
     # trying to add a sixel
-    ds.set_sixel(2, 10, cp=100, repeat=5, ch='~')
+    ds.set_sixel(2, 10, rgb=(100,100,100), repeat=5, ch='~')
 
     ds.pause()
 
     for i in range(1,10):
-      ds.set_pixel(i, i, 200)
+      ds.set_pixel(i, i, (200,0,0))
 
     ds.pause()
 
     for i in range(10,20):
-      ds.set_pixel(i, i, 16)
+      ds.set_pixel(i, i, (16,16,16))
 
     ds.pause()
 
     for i in range(1,20):
-      ds.set_pixel(i, i, 255, True)
+      ds.set_pixel(i, i, (255,0,0), True)
 
     ds.pause()
 
     for i in range(1,10):
-      ds.set_pixel(i, i, 255)
+      ds.set_pixel(i, i, (255,0,0))
 
     ds.pause()
 
@@ -121,9 +147,11 @@ if __name__ == '__main__':
 
     for i in range(0,16):
       for j in range(0,16):
-        cp = random.randrange(0, curses.COLORS-1)
+        r = random.randrange(256)
+        g = random.randrange(256)
+        b = random.randrange(256)
         blnk = random.choice([True,False,False,False,False,False,False,False,False,False])
-        ds.set_pixel(i, j, cp, blnk)
+        ds.set_pixel(i, j, (r,g,b), blnk)
 
     ds.pause()
 
@@ -131,7 +159,13 @@ if __name__ == '__main__':
 
     for i in range(0,maxy-1):
       for j in range(0,maxx-1):
-        ds.set_pixel(i, j, 255)
+        ds.set_pixel(i, j, (256,256,256))
+
+    ds.pause()
+
+    is_blink, rgb = ds.get_pixel(5,5)
+    ds.screen.addstr(7,7, str(rgb))
+    ds.screen.addstr(8,8, str(is_blink))
 
     ds.pause()
 
