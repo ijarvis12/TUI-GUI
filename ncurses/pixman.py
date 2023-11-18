@@ -14,6 +14,7 @@ class DisplayServer():
     # init color
     curses.start_color()
     self.max_color_num = curses.COLORS - 1
+    self.max_color_pair = (curses.COLOR_PAIRS - 1) // 2  # Bug in python3.9 / ncurses 5, only goes to 32k (not 64k)
     # init black and white colors
     curses.init_color(0, 0, 0, 0)  # black
     curses.init_color(self.max_color_num, 1000, 1000, 1000)  # white
@@ -32,14 +33,8 @@ class DisplayServer():
     # init pair white on black
     curses.init_pair(self.max_color_num, self.max_color_num, 0)
     # clear the rest of the color pairs (for get_pixel not mixing up)
-    for cp in range(self.max_color_num+1, curses.COLOR_PAIRS):
-      ### BUG IN PYTHON 3.9 ###
-      try:
-        curses.init_pair(cp, 0, 0)
-      except:
-        pass
-    # clear screen
-    self.clear_screen()
+    for cp in range(self.max_color_num+1, self.max_color_pair):
+      curses.init_pair(cp, 0, 0)
 
   def __del__(self):
     curses.endwin()
@@ -89,21 +84,20 @@ class DisplayServer():
       for j in y_range:
         self.set_pixel(y+j, x+i, rgb)
 
-  ### BUG IN PYTHON 3.9 PREVENTS THIS FUNCTION FROM WORKING ###
-  #def get_pixel(self, y, x):
-  #  char_and_attr = self.screen.inch(y, x)
-  #  is_blinking = char_and_attr & curses.A_ATTRIBUTES == curses.A_BLINK
-  #  color_pair = char_and_attr & curses.A_COLOR
-  #  fg_color, _ = curses.pair_content(color_pair)
-  #  rgb = curses.color_content(fg_color) # rgb is a 3-tuple ranging from 0 to 1000
-  #  r, g, b = rgb
-  #  r *= curses.COLORS
-  #  g *= curses.COLORS
-  #  b *= curses.COLORS
-  #  r //= 1000
-  #  g //= 1000
-  #  b //= 1000
-  #  return (is_blinking, (r, g, b))
+  def get_pixel(self, y, x):
+    char_and_attr = self.screen.inch(y, x)
+    is_blinking = char_and_attr & curses.A_ATTRIBUTES == curses.A_BLINK
+    color_pair = (char_and_attr & curses.A_COLOR) // 2  # Bug in Python 3.9 / ncurses 5
+    fg_color, _ = curses.pair_content(color_pair)
+    rgb = curses.color_content(fg_color) # rgb is a 3-tuple ranging from 0 to 1000
+    r, g, b = rgb
+    r *= curses.COLORS
+    g *= curses.COLORS
+    b *= curses.COLORS
+    r //= 1000
+    g //= 1000
+    b //= 1000
+    return (is_blinking, (r, g, b))
 
 
 
@@ -163,11 +157,11 @@ if __name__ == '__main__':
 
     ds.pause()
 
-    #is_blink, rgb = ds.get_pixel(5,5)
-    #ds.screen.addstr(7,7, str(rgb))
-    #ds.screen.addstr(8,8, str(is_blink))
+    is_blink, rgb = ds.get_pixel(5,5)
+    ds.screen.addstr(7,7, str(rgb))
+    ds.screen.addstr(8,8, str(is_blink))
 
-    #ds.pause()
+    ds.pause()
 
     ds.clear_screen()
 
