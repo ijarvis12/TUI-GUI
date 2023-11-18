@@ -86,7 +86,7 @@ class DisplayServer():
 
   def get_pixel(self, y, x):
     char_and_attr = self.screen.inch(y, x)
-    is_blinking = char_and_attr & curses.A_ATTRIBUTES == curses.A_BLINK
+    is_blinking = (char_and_attr & curses.A_ATTRIBUTES) == curses.A_BLINK
     color_pair = (char_and_attr & curses.A_COLOR) // 2  # Bug in Python 3.9 / ncurses 5
     fg_color, _ = curses.pair_content(color_pair)
     rgb = curses.color_content(fg_color) # rgb is a 3-tuple ranging from 0 to 1000
@@ -153,7 +153,7 @@ if __name__ == '__main__':
 
     for i in range(0,maxy-1):
       for j in range(0,maxx-1):
-        ds.set_pixel(i, j, (256,256,256))
+        ds.set_pixel(i, j, (255,255,255))
 
     ds.pause()
 
