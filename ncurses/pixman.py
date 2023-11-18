@@ -163,11 +163,11 @@ if __name__ == '__main__':
 
     ds.pause()
 
-    is_blink, rgb = ds.get_pixel(5,5)
-    ds.screen.addstr(7,7, str(rgb))
-    ds.screen.addstr(8,8, str(is_blink))
+    #is_blink, rgb = ds.get_pixel(5,5)
+    #ds.screen.addstr(7,7, str(rgb))
+    #ds.screen.addstr(8,8, str(is_blink))
 
-    ds.pause()
+    #ds.pause()
 
     ds.clear_screen()
 
