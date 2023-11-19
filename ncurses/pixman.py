@@ -1,4 +1,4 @@
-!/usr/bin/env python3
+#!/usr/bin/env python3
 
 import curses
 import curses.panel
@@ -7,8 +7,8 @@ import curses.panel
 class DisplayServer():
   """Because of the limitations of ncurses, we can only do 8 bit color for python3.9"""
 
-  def __init__(self, stdscr):
-    self.screen = stdscr
+  def __init__(self):
+    self.screen = curses.initscr()
     # no visible cursor
     curses.curs_set(0)
     # no input echoing
@@ -40,12 +40,13 @@ class DisplayServer():
     # init pixel buffers
     self.pixel_buffers = []
 
-  def __del__(self):
-    self.clear_screen(True)
-    curses.endwin()
-
   def end(self):
-    self.__del__()
+    self.clear_screen(True)
+    curses.use_default_colors()
+    curses.curs_set(2)
+    curses.echo()
+    curses.nocbreak()
+    curses.endwin()
 
   def pause(self):
     self.screen.getch()
@@ -53,10 +54,11 @@ class DisplayServer():
   def clear_screen(self, remove_all_buffers=False):
     for pb in self.pixel_buffers:
       pb.buffer.hide()
-      pb.buffer.window().noutrefresh()
     curses.panel.update_panels()
     curses.doupdate()
     if remove_all_buffers:
+      for pb in self.pixel_buffers:
+        pb.clear(delete=True)
       self.pixel_buffers = []
 
   def new_pixel_buffer(self, nlines=1, ncols=1, begin_y=0, begin_x=0):
@@ -74,10 +76,12 @@ class PixelBuffer():
     self.buffer.top()
     self.buffer.show()
 
-  def __del__(self):
-    self.buffer = None
-    curses.panel.update_panels()
-    curses.doupdate()
+  def clear(self, delete=False):
+    self.buffer.window().clear()
+    self.buffer.window().refresh()
+    if delete:
+      self.buffer = None
+      del self
 
   def set_pixel(self, y=0, x=0, rgb=(0,0,0), set_blink=False):
     # y, x relative to upper left corner of buffer
@@ -124,9 +128,9 @@ class PixelBuffer():
     fg_color, _ = curses.pair_content(color_pair)
     rgb = curses.color_content(fg_color) # rgb is a 3-tuple ranging from 0 to 1000
     r, g, b = rgb
-    r *= curses.COLORS
-    g *= curses.COLORS
-    b *= curses.COLORS
+    r *= 255
+    g *= 255
+    b *= 255
     r //= 1000
     g //= 1000
     b //= 1000
@@ -139,71 +143,67 @@ if __name__ == '__main__':
 
   import random
 
-  def main(stdscr):
+  ds = DisplayServer()
 
-    ds = DisplayServer(stdscr)
+  maxy, maxx = ds.screen.getmaxyx()
 
-    maxy, maxx = ds.screen.getmaxyx()
+  pb0 = ds.new_pixel_buffer(maxy-1, maxx-1)
 
-    pb0 = ds.new_pixel_buffer(maxy-1, maxx-1)
+  # try to add a sixel
+  pb0.set_sixel(2, 10, rgb=(100,100,100), repeat=5, ch='~')
 
-    # try to add a sixel
-    pb0.set_sixel(2, 10, rgb=(100,100,100), repeat=5, ch='~')
+  ds.pause()
 
-    ds.pause()
+  for i in range(1,10):
+    pb0.set_pixel(i, i, (200,0,0))
 
-    for i in range(1,10):
-      pb0.set_pixel(i, i, (200,0,0))
+  ds.pause()
 
-    ds.pause()
+  for i in range(10,20):
+    pb0.set_pixel(i, i, (16,16,16))
 
-    for i in range(10,20):
-      pb0.set_pixel(i, i, (16,16,16))
+  ds.pause()
 
-    ds.pause()
+  for i in range(1,20):
+    pb0.set_pixel(i, i, (255,0,0), True)
 
-    for i in range(1,20):
-      pb0.set_pixel(i, i, (255,0,0), True)
+  ds.pause()
 
-    ds.pause()
+  for i in range(1,10):
+    pb0.set_pixel(i, i, (255,0,0))
 
-    for i in range(1,10):
-      pb0.set_pixel(i, i, (255,0,0))
+  ds.pause()
 
-    ds.pause()
+  random.seed()
 
-    random.seed()
+  for i in range(0,16):
+    for j in range(0,16):
+      r = random.randrange(256)
+      g = random.randrange(256)
+      b = random.randrange(256)
+      blnk = random.choice([True,False,False,False,False,False,False,False,False,False])
+      pb0.set_pixel(i, j, (r,g,b), blnk)
 
-    for i in range(0,16):
-      for j in range(0,16):
-        r = random.randrange(256)
-        g = random.randrange(256)
-        b = random.randrange(256)
-        blnk = random.choice([True,False,False,False,False,False,False,False,False,False])
-        pb0.set_pixel(i, j, (r,g,b), blnk)
+  ds.pause()
 
-    ds.pause()
+  pbmaxy, pbmaxx = pb0.buffer.window().getmaxyx()
 
-    pbmaxy, pbmaxx = pb0.buffer.window().getmaxyx()
+  for i in range(0,pbmaxy-1):
+    for j in range(0,pbmaxx-1):
+      pb0.set_pixel(i, j, (255,255,255))
 
-    for i in range(0,pbmaxy-1):
-      for j in range(0,pbmaxx-1):
-        pb0.set_pixel(i, j, (255,255,255))
+  ds.pause()
 
-    ds.pause()
+  is_blink, rgb = pb0.get_pixel(5,5)
+  pb0.buffer.window().addstr(7,7, str(rgb))
+  pb0.buffer.window().addstr(8,8, str(is_blink))
 
-    is_blink, rgb = pb0.get_pixel(5,5)
-    pb0.buffer.window().addstr(7,7, str(rgb))
-    pb0.buffer.window().addstr(8,8, str(is_blink))
+  ds.pause()
 
-    ds.pause()
+  ds.clear_screen(remove_all_buffers=True)
 
-    ds.clear_screen()
+  ds.pause()
 
-    ds.pause()
+  ds.end()
 
-    ds.end()
-
-
-  # entry point for main
-  curses.wrapper(main)
+  #curses.endwin()
