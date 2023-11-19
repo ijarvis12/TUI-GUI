@@ -41,7 +41,7 @@ class DisplayServer():
     self.pixel_buffers = []
 
   def end(self):
-    self.clear_screen(True)
+    self.clear_screen(remove_all_buffers=True)
     curses.use_default_colors()
     curses.curs_set(2)
     curses.echo()
@@ -49,16 +49,13 @@ class DisplayServer():
     curses.endwin()
 
   def pause(self):
+    self.screen.refresh()
     self.screen.getch()
 
   def clear_screen(self, remove_all_buffers=False):
     for pb in self.pixel_buffers:
-      pb.buffer.hide()
-    curses.panel.update_panels()
-    curses.doupdate()
+      pb.clear(delete=remove_all_buffers)
     if remove_all_buffers:
-      for pb in self.pixel_buffers:
-        pb.clear(delete=True)
       self.pixel_buffers = []
 
   def new_pixel_buffer(self, nlines=1, ncols=1, begin_y=0, begin_x=0):
@@ -75,10 +72,11 @@ class PixelBuffer():
     self.buffer = curses.panel.new_panel(screen_or_window)
     self.buffer.top()
     self.buffer.show()
+    curses.panel.update_panels()
+    curses.doupdate()
 
   def clear(self, delete=False):
     self.buffer.window().clear()
-    self.buffer.window().refresh()
     if delete:
       self.buffer = None
       del self
@@ -122,6 +120,7 @@ class PixelBuffer():
         self.set_pixel(y+j, x+i, rgb)
 
   def get_pixel(self, y, x):
+    # y, x are relative to buffer
     char_and_attr = self.buffer.window().inch(y, x)
     is_blinking = (char_and_attr & curses.A_ATTRIBUTES) == curses.A_BLINK
     color_pair = (char_and_attr & curses.A_COLOR) // 2  # Bug in Python 3.9 / ncurses 5
@@ -200,10 +199,8 @@ if __name__ == '__main__':
 
   ds.pause()
 
-  ds.clear_screen(remove_all_buffers=True)
+  ds.clear_screen(remove_all_buffers=False)
 
   ds.pause()
 
   ds.end()
-
-  #curses.endwin()
