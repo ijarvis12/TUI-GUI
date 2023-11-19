@@ -120,7 +120,7 @@ class PixelBuffer():
         self.set_pixel(y+j, x+i, rgb)
 
   def get_pixel(self, y, x):
-    # y, x are relative to buffer
+    # y, x are relative to upper left corner of buffer
     char_and_attr = self.buffer.window().inch(y, x)
     is_blinking = (char_and_attr & curses.A_ATTRIBUTES) == curses.A_BLINK
     color_pair = (char_and_attr & curses.A_COLOR) // 2  # Bug in Python 3.9 / ncurses 5
