@@ -87,19 +87,12 @@ class PixelBuffer():
       return
     # rgb - arithmetic, each range from 0 to 255
     r, g, b = rgb
-    color_num = int(b)
-    color_num += int(g+(curses.COLORS/3)) if g != 0 else 0
-    color_num += int(r+(curses.COLORS*(2/3))) if r != 0 else 0
+    color_num = b
+    color_num += 256*g
+    color_num += 65536*r
     cp = color_num
-    # get pixel blinking attr
-    already_blinking = (self.buffer.window().inch(y, x) & curses.A_ATTRIBUTES) == curses.A_BLINK
-    # maybe set pixel blinking attr
-    if already_blinking and not set_blink:
-      if_set_blink = curses.A_BLINK
-    elif not already_blinking and set_blink:
-      if_set_blink = curses.A_BLINK
-    else:
-      if_set_blink = 0x0
+    # maybe set blink
+    if_set_blink = curses.A_BLINK if set_blink else 0x0
     # set pixel
     self.buffer.window().addch(y, x, '@', curses.color_pair(cp) | if_set_blink)
 
