@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+!/usr/bin/env python3
 
 import curses
 import curses.panel
@@ -53,11 +53,11 @@ class DisplayServer():
   def clear_screen(self, remove_all_buffers=False):
     for pb in self.pixel_buffers:
       pb.buffer.hide()
+      pb.buffer.window().noutrefresh()
+    curses.panel.update_panels()
+    curses.doupdate()
     if remove_all_buffers:
       self.pixel_buffers = []
-    #maxy, maxx = self.screen.getmaxyx()
-    #for i in range(maxy-1):
-    #  self.screen.hline(i, 0, ' ', maxx-1)  # hlines display faster than individual pixels
 
   def new_pixel_buffer(self, nlines=1, ncols=1, begin_y=0, begin_x=0):
     pixel_buffer = PixelBuffer(self.screen, nlines, ncols, begin_y, begin_x)
@@ -67,13 +67,17 @@ class DisplayServer():
 
 
 class PixelBuffer():
-  """Buffer of pixels that can be show and hidden, plus moved around"""
+  """Buffer of pixels that can be shown and hidden, plus moved around"""
 
-  def __init__(self, screen, nlines=1, ncols=1, begin_y=0, begin_x=0):
-    #window = curses.newwin(nlines, ncols, begin_y, begin_x)
-    self.buffer = curses.panel.new_panel(screen)
+  def __init__(self, screen_or_window, nlines=1, ncols=1, begin_y=0, begin_x=0):
+    self.buffer = curses.panel.new_panel(screen_or_window)
     self.buffer.top()
     self.buffer.show()
+
+  def __del__(self):
+    self.buffer = None
+    curses.panel.update_panels()
+    curses.doupdate()
 
   def set_pixel(self, y=0, x=0, rgb=(0,0,0), set_blink=False):
     # y, x relative to upper left corner of buffer
@@ -139,13 +143,11 @@ if __name__ == '__main__':
 
     ds = DisplayServer(stdscr)
 
-    #ds.screen.addstr(str(curses.COLOR_PAIRS)+' '+str(curses.COLORS))
-
     maxy, maxx = ds.screen.getmaxyx()
 
     pb0 = ds.new_pixel_buffer(maxy-1, maxx-1)
 
-    # trying to add a sixel
+    # try to add a sixel
     pb0.set_sixel(2, 10, rgb=(100,100,100), repeat=5, ch='~')
 
     ds.pause()
@@ -201,6 +203,7 @@ if __name__ == '__main__':
     ds.pause()
 
     ds.end()
+
 
   # entry point for main
   curses.wrapper(main)
