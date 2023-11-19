@@ -5,7 +5,6 @@ import curses.panel
 
 
 class DisplayServer():
-  """Because of the limitations of ncurses, we can only do 8 bit color for python3.9"""
 
   def __init__(self):
     self.screen = curses.initscr()
