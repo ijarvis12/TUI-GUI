@@ -5,4 +5,4 @@ The textualwm.py one uses PyPI package 'textual' version 0.41.0 and 'textual-ter
 
 The textualde.py uses additionally PyPI package 'textual-imageview' version 0.1.1
 
-textualeditor.py use texual version 0.38.1
+textualeditor.py uses texual version 0.38.1
