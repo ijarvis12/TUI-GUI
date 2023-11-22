@@ -36,8 +36,12 @@ class DisplayServer():
     # clear the rest of the color pairs (for PixelBuffer.get_pixel() not mixing up)
     for cp in range(self.MAX_COLOR_NUM+1, self.MAX_COLOR_PAIR):
       curses.init_pair(cp, 0, 0)
-    # init pixel buffers
-    self.pixel_buffers = []
+    # init pixel buffers, with one
+    maxy, maxx = self.screen.getmaxyx()
+    self.pixel_buffers = [PixelBuffer(maxy, maxx)]
+    self.pixel_buffers[0].buffer.replace(self.screen)
+    curses.panel.update_panels()
+    curses.doupdate()
 
   def end(self):
     self.clear_screen(remove_all_buffers=True)
@@ -58,7 +62,7 @@ class DisplayServer():
       self.pixel_buffers = []
 
   def new_pixel_buffer(self, nlines=1, ncols=1, begin_y=0, begin_x=0):
-    pixel_buffer = PixelBuffer(self.screen, nlines, ncols, begin_y, begin_x)
+    pixel_buffer = PixelBuffer(nlines, ncols, begin_y, begin_x)
     self.pixel_buffers.append(pixel_buffer)
     return pixel_buffer
 
@@ -67,10 +71,9 @@ class DisplayServer():
 class PixelBuffer():
   """Buffer of pixels that can be shown and hidden, plus moved around"""
 
-  def __init__(self, screen_or_window, nlines=1, ncols=1, begin_y=0, begin_x=0):
-    self.buffer = curses.panel.new_panel(screen_or_window)
-    self.buffer.move(begin_y, begin_x)
-    self.buffer.window().resize(nlines, ncols)
+  def __init__(self, nlines=1, ncols=1, begin_y=0, begin_x=0):
+    self.window = curses.newwin(nlines, ncols, begin_y, begin_x)
+    self.buffer = curses.panel.new_panel(self.window)
     self.buffer.top()
     self.buffer.show()
     curses.panel.update_panels()
@@ -135,9 +138,7 @@ if __name__ == '__main__':
 
   ds = DisplayServer()
 
-  maxy, maxx = ds.screen.getmaxyx()
-
-  pb0 = ds.new_pixel_buffer(maxy, maxx)
+  pb0 = ds.pixel_buffers[0]
 
   # try to add a sixel
   pb0.set_sixel(2, 10, rgb=(100,100,100), repeat=5, ch='~')
@@ -176,7 +177,7 @@ if __name__ == '__main__':
 
   ds.pause()
 
-  pbmaxy, pbmaxx = pb0.buffer.window().getmaxyx()
+  pbmaxy, pbmaxx = pb0.window.getmaxyx()
 
   for i in range(0,pbmaxy-1):
     for j in range(0,pbmaxx-1):
