@@ -21,7 +21,7 @@ class DisplayServer():
     curses.init_color(self.MAX_COLOR_NUM, 1000, 1000, 1000)  # white
     # init r,g,b colors
     color_num = 0
-    color_range_step = 3000 // int(curses.COLORS**(1/3))
+    color_range_step = 3000 // int(self.MAX_COLOR_NUM**(1/3))
     # r,g,b each range 0 to 1000
     for r in range(0, 1001, color_range_step):
       for g in range(0, 1001, color_range_step):
@@ -69,6 +69,8 @@ class PixelBuffer():
 
   def __init__(self, screen_or_window, nlines=1, ncols=1, begin_y=0, begin_x=0):
     self.buffer = curses.panel.new_panel(screen_or_window)
+    self.buffer.move(begin_y, begin_x)
+    self.buffer.window().resize(nlines, ncols)
     self.buffer.top()
     self.buffer.show()
     curses.panel.update_panels()
@@ -135,7 +137,7 @@ if __name__ == '__main__':
 
   maxy, maxx = ds.screen.getmaxyx()
 
-  pb0 = ds.new_pixel_buffer(maxy-1, maxx-1)
+  pb0 = ds.new_pixel_buffer(maxy, maxx)
 
   # try to add a sixel
   pb0.set_sixel(2, 10, rgb=(100,100,100), repeat=5, ch='~')
