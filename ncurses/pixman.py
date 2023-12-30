@@ -36,7 +36,7 @@ class DisplayServer():
     # clear the rest of the color pairs (for PixelBuffer.get_pixel() not mixing up)
     for cp in range(self.MAX_COLOR_NUM+1, self.MAX_COLOR_PAIR):
       curses.init_pair(cp, 0, 0)
-    # init pixel buffers, with one
+    # init pixel buffers
     maxy, maxx = self.screen.getmaxyx()
     self.pixel_buffers = [PixelBuffer(maxy, maxx)]
     self.pixel_buffers[0].buffer.replace(self.screen)
@@ -72,8 +72,7 @@ class PixelBuffer():
   """Buffer of pixels that can be shown and hidden, plus moved around"""
 
   def __init__(self, nlines=1, ncols=1, begin_y=0, begin_x=0):
-    self.window = curses.newwin(nlines, ncols, begin_y, begin_x)
-    self.buffer = curses.panel.new_panel(self.window)
+    self.buffer = curses.panel.new_panel(curses.newwin(nlines, ncols, begin_y, begin_x))
     self.buffer.top()
     self.buffer.show()
     curses.panel.update_panels()
@@ -177,7 +176,7 @@ if __name__ == '__main__':
 
   ds.pause()
 
-  pbmaxy, pbmaxx = pb0.window.getmaxyx()
+  pbmaxy, pbmaxx = pb0.buffer.window().getmaxyx()
 
   for i in range(0,pbmaxy-1):
     for j in range(0,pbmaxx-1):
@@ -193,6 +192,10 @@ if __name__ == '__main__':
 
   ds.clear_screen(remove_all_buffers=False)
 
+  ds.pause()
+
+  pb0.buffer.window().vline('@', pbmaxy)
+  
   ds.pause()
 
   ds.end()
