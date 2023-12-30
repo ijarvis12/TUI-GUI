@@ -190,12 +190,14 @@ if __name__ == '__main__':
 
   ds.pause()
 
+  for j in range(0, pbmaxx):
+    pb0.buffer.window().vline(0, j, '@', pbmaxy)
+
+  ds.pause()
+
   ds.clear_screen(remove_all_buffers=False)
 
   ds.pause()
 
-  pb0.buffer.window().vline('@', pbmaxy)
-  
-  ds.pause()
 
   ds.end()
