@@ -21,7 +21,7 @@ class DisplayServer():
     curses.init_color(self.MAX_COLOR_NUM, 1000, 1000, 1000)  # white
     # init r,g,b colors
     color_num = 0
-    color_range_step = 3000 // int(self.MAX_COLOR_NUM**(1/3))
+    color_range_step = 1000 // 6
     # r,g,b each range 0 to 1000
     for r in range(0, 1001, color_range_step):
       for g in range(0, 1001, color_range_step):
@@ -89,8 +89,8 @@ class PixelBuffer():
     # rgb - arithmetic, each range from 0 to 255
     r, g, b = rgb
     color_num = b
-    color_num += 256*g
-    color_num += 65536*r
+    color_num += 36*g
+    color_num += 216*r
     cp = color_num
     # maybe set blink
     if_set_blink = curses.A_BLINK if set_blink else 0x0
