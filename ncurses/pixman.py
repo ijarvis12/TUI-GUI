@@ -33,9 +33,6 @@ class DisplayServer():
       curses.init_pair(color, color, 0)
     # init pair white on black
     curses.init_pair(self.MAX_COLOR_NUM, self.MAX_COLOR_NUM, 0)
-    # clear the rest of the color pairs (for PixelBuffer.get_pixel() not mixing up)
-    for cp in range(self.MAX_COLOR_NUM+1, self.MAX_COLOR_PAIR):
-      curses.init_pair(cp, 0, 0)
     # init pixel buffers
     maxy, maxx = self.screen.getmaxyx()
     self.pixel_buffers = [PixelBuffer(maxy, maxx)]
