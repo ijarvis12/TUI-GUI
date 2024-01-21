@@ -29,7 +29,7 @@ class DisplayServer():
     # init pixel buffers
     maxy, maxx = self.screen.getmaxyx()
     self.pixel_buffers = [PixelBuffer(maxy, maxx)]
-    self.pixel_buffers[0].buffer.replace(self.screen)
+    #self.pixel_buffers[0].buffer.replace(self.screen)
     curses.panel.update_panels()
     curses.doupdate()
 
