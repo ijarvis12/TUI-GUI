@@ -14,25 +14,18 @@ class DisplayServer():
     curses.noecho()
     # init color
     curses.start_color()
-    self.MAX_COLOR_NUM = curses.COLORS - 1
-    self.MAX_COLOR_PAIR = curses.COLOR_PAIRS - 1
-    # init black and white colors
-    curses.init_color(0, 0, 0, 0)  # black
-    curses.init_color(self.MAX_COLOR_NUM, 1000, 1000, 1000)  # white
     # init r,g,b colors
-    color_num = 0
-    color_range_step = 1000 // 6
-    # r,g,b each range 0 to 1000
-    for r in range(0, 1001, color_range_step):
+    color_num = 0 # ranges from 0 to 216 (>256)
+    color_range_step = 1000 // 5
+    # r,g,b each range 0 to 1000 in curses module
+    for b in range(0, 1001, color_range_step):
       for g in range(0, 1001, color_range_step):
-        for b in range(0, 1001, color_range_step):
-          color_num += 1
+        for r in range(0, 1001, color_range_step):
           curses.init_color(color_num, r, g, b)
+          color_num += 1
     # init color pairs (use black background)
-    for color in range(1, self.MAX_COLOR_NUM):
+    for color in range(0, color_num):
       curses.init_pair(color, color, 0)
-    # init pair white on black
-    curses.init_pair(self.MAX_COLOR_NUM, self.MAX_COLOR_NUM, 0)
     # init pixel buffers
     maxy, maxx = self.screen.getmaxyx()
     self.pixel_buffers = [PixelBuffer(maxy, maxx)]
@@ -86,11 +79,11 @@ class PixelBuffer():
     # Test if coordinates are right
     if not self.buffer.window().enclose(y, x):
       return
-    # rgb - arithmetic, each range from 0 to 255
+    # rgb - arithmetic, each range from 0 to 6
     r, g, b = rgb
     color_num = b
-    color_num += 36*g
-    color_num += 216*r
+    color_num += 6*g
+    color_num += 36*r
     cp = color_num
     # maybe set blink
     if_set_blink = curses.A_BLINK if set_blink else 0x0
@@ -117,9 +110,9 @@ class PixelBuffer():
     fg_color, _ = curses.pair_content(color_pair)
     rgb = curses.color_content(fg_color) # rgb is a 3-tuple ranging from 0 to 1000
     r, g, b = rgb
-    r *= 255
-    g *= 255
-    b *= 255
+    r *= 6
+    g *= 6
+    b *= 6
     r //= 1000
     g //= 1000
     b //= 1000
@@ -147,17 +140,17 @@ if __name__ == '__main__':
   ds.pause()
 
   for i in range(10,20):
-    pb0.set_pixel(i, i, (6,6,6))
+    pb0.set_pixel(i, i, (5,5,5))
 
   ds.pause()
 
   for i in range(1,20):
-    pb0.set_pixel(i, i, (6,0,0), True)
+    pb0.set_pixel(i, i, (5,0,0), True)
 
   ds.pause()
 
   for i in range(1,10):
-    pb0.set_pixel(i, i, (6,0,0))
+    pb0.set_pixel(i, i, (5,0,0))
 
   ds.pause()
 
@@ -177,7 +170,7 @@ if __name__ == '__main__':
 
   for i in range(0,pbmaxy-1):
     for j in range(0,pbmaxx-1):
-      pb0.set_pixel(i, j, (6,6,6))
+      pb0.set_pixel(i, j, (5,5,5))
 
   ds.pause()
 
