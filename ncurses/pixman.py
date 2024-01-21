@@ -137,27 +137,27 @@ if __name__ == '__main__':
   pb0 = ds.pixel_buffers[0]
 
   # try to add a sixel
-  pb0.set_sixel(2, 10, rgb=(100,100,100), repeat=5, ch='~')
+  pb0.set_sixel(2, 10, rgb=(1,1,1), repeat=5, ch='~')
 
   ds.pause()
 
   for i in range(1,10):
-    pb0.set_pixel(i, i, (200,0,0))
+    pb0.set_pixel(i, i, (2,0,0))
 
   ds.pause()
 
   for i in range(10,20):
-    pb0.set_pixel(i, i, (16,16,16))
+    pb0.set_pixel(i, i, (6,6,6))
 
   ds.pause()
 
   for i in range(1,20):
-    pb0.set_pixel(i, i, (255,0,0), True)
+    pb0.set_pixel(i, i, (6,0,0), True)
 
   ds.pause()
 
   for i in range(1,10):
-    pb0.set_pixel(i, i, (255,0,0))
+    pb0.set_pixel(i, i, (6,0,0))
 
   ds.pause()
 
@@ -165,9 +165,9 @@ if __name__ == '__main__':
 
   for i in range(0,16):
     for j in range(0,16):
-      r = random.randrange(256)
-      g = random.randrange(256)
-      b = random.randrange(256)
+      r = random.randrange(7)
+      g = random.randrange(7)
+      b = random.randrange(7)
       blnk = random.choice([True,False,False,False,False,False,False,False,False,False])
       pb0.set_pixel(i, j, (r,g,b), blnk)
 
@@ -177,7 +177,7 @@ if __name__ == '__main__':
 
   for i in range(0,pbmaxy-1):
     for j in range(0,pbmaxx-1):
-      pb0.set_pixel(i, j, (255,255,255))
+      pb0.set_pixel(i, j, (6,6,6))
 
   ds.pause()
 
