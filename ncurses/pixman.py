@@ -110,9 +110,9 @@ class PixelBuffer():
     fg_color, _ = curses.pair_content(color_pair)
     rgb = curses.color_content(fg_color) # rgb is a 3-tuple ranging from 0 to 1000
     r, g, b = rgb
-    r *= 6
-    g *= 6
-    b *= 6
+    r *= 5
+    g *= 5
+    b *= 5
     r //= 1000
     g //= 1000
     b //= 1000
