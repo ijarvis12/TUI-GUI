@@ -92,7 +92,9 @@ if __name__ == '__main__':
 
   util.init()
 
-  util.set_sixel(1, 1)
+  stop = 384
+  for i in range(stop+1):
+    util.set_sixel(1,1,(100*i//stop,100*i//stop,100*i//stop),stop-i)
 
   for i in range(0,7):
     util.set_pixel(i, i, (255,0,0))
