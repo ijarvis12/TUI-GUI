@@ -48,7 +48,7 @@ class util:
   wrap_disable = "\u001b[?7l"
   wrap_enable = "\u001b[?7h"
 
-  # cursor movments
+  # cursor movements
   up = "\u001b[1A"
   down = "\u001b[1B"
   right = "\u001b[1C"
