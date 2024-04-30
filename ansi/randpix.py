@@ -96,6 +96,12 @@ if __name__ == '__main__':
   for i in range(stop+1):
     util.set_sixel(1,1,(100*i//stop,100*i//stop,100*i//stop),stop-i)
 
+  for y in range(1,101):
+    for x in range(y+1):
+      util.set_sixel(x, y, (y-x, x, 100-y), 1)
+
+  util.pause()
+
   for i in range(0,7):
     util.set_pixel(i, i, (255,0,0))
 
