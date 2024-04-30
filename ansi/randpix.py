@@ -92,13 +92,24 @@ if __name__ == '__main__':
 
   util.init()
 
+  # grey scale
   stop = 384
   for i in range(stop+1):
     util.set_sixel(1,1,(100*i//stop,100*i//stop,100*i//stop),stop-i)
 
+  # pretty color triangle
   for y in range(1,101):
     for x in range(y+1):
       util.set_sixel(x, y, (y-x, x, 100-y), 1)
+
+  # a faster one
+  for y in range(1,101):
+    util.to(1, y)
+    write(util.sixel_begin)
+    for x in range(y+1):
+      write(f"#{x};2;{y-x};{x};{100-y}#{x}!1~")
+    write("-")
+    write(util.sixel_end)
 
   util.pause()
 
