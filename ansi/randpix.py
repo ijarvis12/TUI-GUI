@@ -98,16 +98,16 @@ if __name__ == '__main__':
     util.set_sixel(1,1,(100*i//stop,100*i//stop,100*i//stop),stop-i)
 
   # pretty color triangle
-  for y in range(1,101):
+  for y in range(101):
     for x in range(y+1):
-      util.set_sixel(x, y, (y-x, x, 100-y), 1)
+      util.set_sixel(x, y, (y-x, x, 100-y), 6)
 
   # a faster one
-  for y in range(1,101):
-    util.to(1, y)
+  for y in range(101):
+    util.to(0, y)
     write(util.sixel_begin)
     for x in range(y+1):
-      write(f"#{x};2;{y-x};{x};{100-y}#{x}!1~")
+      write(f"#{x};2;{y-x};{x};{100-y}#{x}!3~")
     write("-")
     write(util.sixel_end)
 
